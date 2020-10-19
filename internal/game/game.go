@@ -1,7 +1,9 @@
 package game
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
 	"github.com/pkg/errors"
@@ -15,11 +17,17 @@ type (
 		o byte
 	}
 
+	moveVector struct {
+		x int8
+		y int8
+	}
+
 	// Game represents the current game state
 	Game struct {
-		p *Player
-		m *Maze
-		v *view
+		p    *Player
+		m    *Maze
+		v    *view
+		move moveVector
 	}
 )
 
@@ -41,8 +49,6 @@ type (
 	}
 )
 
-var walls = [2]rune{'░', '▓'}
-
 // New creates a new game state
 func New() *Game {
 	return &Game{
@@ -52,7 +58,8 @@ func New() *Game {
 		m: &Maze{
 			grid: grid{},
 		},
-		v: &view{},
+		v:    &view{},
+		move: moveVector{0, -1},
 	}
 }
 
@@ -73,11 +80,45 @@ func (g *Game) Run() error {
 		return errors.WithMessage(err, "failed to import maze")
 	}
 
-	if err := g.updateView(); err != nil {
-		return errors.WithMessage(err, "failed to update view")
+	for {
+		if err := g.updateView(); err != nil {
+			return errors.WithMessage(err, "failed to update view")
+		}
+		fmt.Println(g.render())
+
+		reader := bufio.NewReader(os.Stdin)
+
+		char, _, err := reader.ReadRune()
+		if err != nil {
+			return errors.WithMessage(err, "error reading rune from terminal")
+		}
+
+		// TODO remove need to hit return!
+
+		switch char {
+		case 'w':
+			debug.Println("Move forward")
+			g.moveForward()
+			break
+		case 's':
+			debug.Println("Move backward")
+			g.moveBackwards()
+			break
+		case 'd':
+			fallthrough
+		case 'e':
+			debug.Println("Turn right")
+			g.rotateRight()
+			break
+		case 'a':
+			fallthrough
+		case 'q':
+			debug.Println("Turn left")
+			g.rotateLeft()
+			break
+		}
+		debug.Printf("Player is now at (%d,%d). Facing (%c)\n", g.p.x, g.p.y, g.p.o)
 	}
-	fmt.Println(g.render())
-	return nil
 }
 
 func (g *Game) importMaze(m mazeDefinition) error {
