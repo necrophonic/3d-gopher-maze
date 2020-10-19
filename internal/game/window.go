@@ -15,6 +15,8 @@ type point struct {
 	y int8
 }
 
+var walls = [2]rune{'▒', '░'}
+
 // ErrBadSpace is returned if the space definition in a
 // point location is unexpected
 type ErrBadSpace struct {
@@ -29,9 +31,11 @@ const scale = 2
 
 // Constants defining screen pixels to display in the view window
 const (
-	PW pixel = iota
-	PO
-	PE // Floor, ceiling and distant wall out of view range
+	PW pixel = iota // Wall
+	PO              // Open
+	PE              // Empty
+	PF              // Floor
+	PC              // Ceiling
 )
 
 type displayType uint8
@@ -114,35 +118,33 @@ func (g *Game) updateView() error {
 	var rp point
 	var fp point
 
-	// Move modifiers
-	var mmx int8
-	var mmy int8
+	var mx, my int8
 
 	switch p.o {
 	case 'n':
 		lp = point{p.x - 1, p.y}
 		rp = point{p.x + 1, p.y}
 		fp = point{p.x, p.y - 1}
-		mmx = 0
-		mmy = -1
+		mx = 0
+		my = -1
 	case 's':
 		lp = point{p.x + 1, p.y}
 		rp = point{p.x - 1, p.y}
 		fp = point{p.x, p.y + 1}
-		mmx = 0
-		mmy = 1
+		mx = 0
+		my = 1
 	case 'e':
 		lp = point{p.x, p.y - 1}
 		rp = point{p.x, p.y + 1}
 		fp = point{p.x + 1, p.y}
-		mmx = 1
-		mmy = 0
+		mx = 1
+		my = 0
 	case 'w':
 		lp = point{p.x, p.y + 1}
 		rp = point{p.x, p.y - 1}
 		fp = point{p.x - 1, p.y}
-		mmx = -1
-		mmy = 0
+		mx = -1
+		my = 0
 	}
 
 	// Check left (L) and right (R) first
@@ -178,8 +180,8 @@ func (g *Game) updateView() error {
 		debug.Println("Space in (fp) is (empty)")
 
 		// Move up a row in the direction we're facing
-		lp = point{lp.x + mmx, lp.y + mmy}
-		rp = point{rp.x + mmx, rp.y + mmy}
+		lp = point{lp.x + mx, lp.y + my}
+		rp = point{rp.x + mx, rp.y + my}
 
 		debug.Printf("Checking L1 (%d,%d)[%c] R1 (%d,%d)[%c]", lp.x, lp.y, g.m.getSpace(lp).t, rp.x, rp.y, g.m.getSpace(rp).t)
 
@@ -208,7 +210,7 @@ func (g *Game) updateView() error {
 	// FP 1 -------
 
 	// Move forward again
-	fp = point{fp.x + mmx, fp.y + mmy}
+	fp = point{fp.x + mx, fp.y + my}
 
 	// Then check front. If it's a wall then panels 1-6 are Wall Near.
 	// Otherwise we can check L1 and R1
@@ -223,8 +225,8 @@ func (g *Game) updateView() error {
 		debug.Println("Space in (fp1) is (empty)")
 
 		// Move up a row in the direction we're facing
-		lp = point{lp.x + mmx, lp.y + mmy}
-		rp = point{rp.x + mmx, rp.y + mmy}
+		lp = point{lp.x + mx, lp.y + my}
+		rp = point{rp.x + mx, rp.y + my}
 
 		debug.Printf("Checking L2 (%d,%d)[%c] R2 (%d,%d)[%c]", lp.x, lp.y, g.m.getSpace(lp).t, rp.x, rp.y, g.m.getSpace(rp).t)
 
@@ -253,7 +255,7 @@ func (g *Game) updateView() error {
 	// FP 2 -------
 
 	// Move forward again
-	fp = point{fp.x + mmx, fp.y + mmy}
+	fp = point{fp.x + mx, fp.y + my}
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp2) is (wall)")
@@ -263,12 +265,12 @@ func (g *Game) updateView() error {
 		debug.Println("Space in (fp2) is (empty)")
 
 		// Move up a row in the direction we're facing
-		lp = point{lp.x + mmx, lp.y + mmy}
-		rp = point{rp.x + mmx, rp.y + mmy}
+		lp = point{lp.x + mx, lp.y + my}
+		rp = point{rp.x + mx, rp.y + my}
 	}
 
 	// Final step
-	fp = point{fp.x + mmx, fp.y + mmy}
+	fp = point{fp.x + mx, fp.y + my}
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp3) is (wall)")
@@ -289,6 +291,11 @@ func (g *Game) render() string {
 
 	output := "╔════════════════════════╗\n"
 
+	wallColourMod := 0
+	if g.p.o == 'e' || g.p.o == 'w' {
+		wallColourMod = 1
+	}
+
 	for y := 0; y < displayHeight; y++ {
 		output += "║ "
 		for c := 0; c < 7; c++ {
@@ -297,10 +304,10 @@ func (g *Game) render() string {
 			for _, pxl := range panel[y] {
 				switch pxl {
 				case PW:
-					output += strings.Repeat(string(walls[0]), scale)
+					output += strings.Repeat(string(walls[(wallColourMod%2)]), scale)
 				case PO:
-					output += strings.Repeat(string(walls[1]), scale)
-				case PE:
+					output += strings.Repeat(string(walls[(wallColourMod+1)%2]), scale)
+				default:
 					output += "  "
 				}
 			}
@@ -316,13 +323,13 @@ type windowColumn uint8
 // Common sequences
 var (
 	empty345          = windowSlice{{PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}}
-	d06OpenWall       = windowSlice{{PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PE, PE}}
-	d15OpenWallMiddle = windowSlice{{PE, PE}, {PE, PE}, {PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PE, PE}, {PE, PE}, {PE, PE}}
-	d15OpenWallNear   = windowSlice{{PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PE, PE}}
-	d24SideWall       = windowSlice{{PE}, {PE}, {PE}, {PE}, {PW}, {PE}, {PE}, {PE}, {PE}}
-	d24OpenWallNear   = windowSlice{{PE}, {PO}, {PO}, {PO}, {PO}, {PO}, {PO}, {PO}, {PE}}
-	d24OpenWallMiddle = windowSlice{{PE}, {PE}, {PE}, {PO}, {PO}, {PO}, {PE}, {PE}, {PE}}
-	d24OpenWallFar    = windowSlice{{PE}, {PE}, {PE}, {PE}, {PO}, {PE}, {PE}, {PE}, {PE}}
+	d06OpenWall       = windowSlice{{PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PF, PF}}
+	d15OpenWallMiddle = windowSlice{{PE, PE}, {PE, PE}, {PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PF, PF}, {PF, PF}, {PF, PF}}
+	d15OpenWallNear   = windowSlice{{PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PF, PF}}
+	d24SideWall       = windowSlice{{PE}, {PE}, {PE}, {PE}, {PW}, {PF}, {PF}, {PF}, {PF}}
+	d24OpenWallNear   = windowSlice{{PE}, {PO}, {PO}, {PO}, {PO}, {PO}, {PO}, {PO}, {PF}}
+	d24OpenWallMiddle = windowSlice{{PE}, {PE}, {PE}, {PO}, {PO}, {PO}, {PF}, {PF}, {PF}}
+	d24OpenWallFar    = windowSlice{{PE}, {PE}, {PE}, {PE}, {PO}, {PF}, {PF}, {PF}, {PF}}
 )
 
 var panels = map[windowColumn]map[displayType]windowSlice{
@@ -331,7 +338,7 @@ var panels = map[windowColumn]map[displayType]windowSlice{
 		DOpenWallNear: d06OpenWall,
 	},
 	1: {
-		DSideWall:       {{PE, PE}, {PE, PE}, {PW, PE}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PE}, {PE, PE}, {PE, PE}},
+		DSideWall:       {{PE, PE}, {PE, PE}, {PW, PE}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PF}, {PF, PF}, {PF, PF}},
 		DOpenWallMiddle: d15OpenWallMiddle,
 		DOpenWallNear:   d15OpenWallNear,
 	},
@@ -354,12 +361,12 @@ var panels = map[windowColumn]map[displayType]windowSlice{
 		DOpenWallFar:    d24OpenWallFar,
 	},
 	5: {
-		DSideWall:       {{PE, PE}, {PE, PE}, {PE, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PE, PW}, {PE, PE}, {PE, PE}},
+		DSideWall:       {{PE, PE}, {PE, PE}, {PE, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PF, PW}, {PF, PF}, {PF, PF}},
 		DOpenWallMiddle: d15OpenWallMiddle,
 		DOpenWallNear:   d15OpenWallNear,
 	},
 	6: {
-		DSideWall:     {{PE, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PE, PW}},
+		DSideWall:     {{PE, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PF, PW}},
 		DOpenWallNear: d06OpenWall,
 	},
 }
