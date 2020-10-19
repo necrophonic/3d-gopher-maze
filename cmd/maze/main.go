@@ -18,8 +18,6 @@ func run() {
 		debug.Println("Error running game:", err)
 		os.Exit(1)
 	}
-
-	// fmt.Println(game.Swatch())
 }
 
 // ╔════════════════════════╗

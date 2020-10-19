@@ -10,8 +10,8 @@ import (
 type (
 	// Player represents the current player state
 	Player struct {
-		x uint
-		y uint
+		x int8
+		y int8
 		o byte
 	}
 
@@ -19,6 +19,7 @@ type (
 	Game struct {
 		p *Player
 		m *Maze
+		v *view
 	}
 )
 
@@ -29,15 +30,15 @@ const (
 	SpacePlayerStart           = 'p'
 )
 
+const displayWidth = 11
+const displayHeight = 9
+
 type (
 	spaceType uint8
 
 	space struct {
 		t spaceType
 	}
-
-	// Maze is a fully built maze
-	Maze [][]space
 )
 
 var walls = [2]rune{'░', '▓'}
@@ -48,6 +49,10 @@ func New() *Game {
 		p: &Player{
 			o: 'n',
 		},
+		m: &Maze{
+			grid: grid{},
+		},
+		v: &view{},
 	}
 }
 
@@ -62,14 +67,16 @@ func Swatch() string {
 
 // Run performs the main game loop
 func (g *Game) Run() error {
-
 	// TODO randomly (totally or from set of criteria) select a maze
 	// TODO would be nice to able to dynamically create one!
 	if err := g.importMaze(mazes[0]); err != nil {
 		return errors.WithMessage(err, "failed to import maze")
 	}
 
-	g.render()
+	if err := g.updateView(); err != nil {
+		return errors.WithMessage(err, "failed to update view")
+	}
+	fmt.Println(g.render())
 	return nil
 }
 
@@ -82,15 +89,15 @@ func (g *Game) importMaze(m mazeDefinition) error {
 
 	playerFound := false
 
-	newMaze := make(Maze, height)
+	newMaze := make([][]space, height)
 	for y := range m {
 		newMaze[y] = make([]space, width)
 		for x, sp := range m[y] {
 			// If this is a player start point then we want to
 			// mark that point, and set the space as "empty"
 			if sp == SpacePlayerStart {
-				g.p.x = uint(x)
-				g.p.y = uint(y)
+				g.p.x = int8(x)
+				g.p.y = int8(y)
 				sp = uint8(SpaceEmpty)
 				playerFound = true
 				debug.Printf("Found player start point at (%d,%d)", x, y)
@@ -105,10 +112,6 @@ func (g *Game) importMaze(m mazeDefinition) error {
 		return errors.New("bad maze definition: no player start point")
 	}
 
-	g.m = &newMaze
+	g.m.grid = newMaze
 	return nil
-}
-
-func (g *Game) render() {
-
 }
