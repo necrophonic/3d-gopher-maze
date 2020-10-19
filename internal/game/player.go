@@ -3,13 +3,19 @@ package game
 import "github.com/necrophonic/gopher-maze/internal/debug"
 
 func (g *Game) moveForward() {
-	// TODO check wall
+	if g.isMoveToWall(g.move.x, g.move.y) {
+		debug.Println("Move forward to wall - stopping")
+		return
+	}
 	g.p.x += g.move.x
 	g.p.y += g.move.y
 }
 
 func (g *Game) moveBackwards() {
-	// TODO check wall
+	if g.isMoveToWall(g.move.x*-1, g.move.y*-1) {
+		debug.Println("Move backward to wall - stopping")
+		return
+	}
 	g.p.x += (g.move.x * -1)
 	g.p.y += (g.move.y * -1)
 }
@@ -56,4 +62,13 @@ func (g *Game) rotateLeft() {
 		g.move.x = 0
 		g.move.y = -1
 	}
+}
+
+func (g *Game) isMoveToWall(mx, my int8) bool {
+	px := g.p.x + mx
+	py := g.p.y + my
+	if g.m.getSpace(point{px, py}).t == SpaceWall {
+		return true
+	}
+	return false
 }

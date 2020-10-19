@@ -7,7 +7,6 @@ import (
 	"github.com/necrophonic/gopher-maze/internal/debug"
 )
 
-// type panel uint8
 type pixel uint8
 type windowSlice [][]pixel
 type point struct {
@@ -40,6 +39,7 @@ const (
 
 type displayType uint8
 
+// Wall panel dispositions
 const (
 	DSideWall displayType = iota // A closed wall
 	DOpenWallNear
