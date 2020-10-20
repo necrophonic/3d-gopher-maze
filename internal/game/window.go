@@ -1,6 +1,7 @@
 package game
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -25,8 +26,6 @@ type ErrBadSpace struct {
 func (e ErrBadSpace) Error() string {
 	return fmt.Sprintf("bad space definition at (%d,%d)", e.p.x, e.p.y)
 }
-
-const scale = 2
 
 // Constants defining screen pixels to display in the view window
 const (
@@ -76,37 +75,37 @@ func (g *Game) updateView() error {
 
 	// ------
 
-	g.v[0] = panels[0][DSideWall]
-	g.v[1] = panels[1][DSideWall]
-	g.v[2] = panels[2][DSideWall]
-	g.v[3] = panels[3][DEmpty]
-	g.v[4] = panels[4][DSideWall]
-	g.v[5] = panels[5][DSideWall]
-	g.v[6] = panels[6][DSideWall]
+	// g.v[0] = g.m.panels[0][DSideWall]
+	// g.v[1] = g.m.panels[1][DSideWall]
+	// g.v[2] = g.m.panels[2][DSideWall]
+	// g.v[3] = g.m.panels[3][DEmpty]
+	// g.v[4] = g.m.panels[4][DSideWall]
+	// g.v[5] = g.m.panels[5][DSideWall]
+	// g.v[6] = g.m.panels[6][DSideWall]
 
-	// window[0] = panels[0][DOpenWallNear]
-	// window[1] = panels[1][DSideWall]
-	// window[2] = panels[2][DOpenWallFar]
-	// window[3] = panels[3][DOpenWallFar]
-	// window[4] = panels[4][DSideWall]
-	// window[5] = panels[5][DSideWall]
-	// window[6] = panels[6][DSideWall]
+	// window[0] = g.m.panels[0][DOpenWallNear]
+	// window[1] = g.m.panels[1][DSideWall]
+	// window[2] = g.m.panels[2][DOpenWallFar]
+	// window[3] = g.m.panels[3][DOpenWallFar]
+	// window[4] = g.m.panels[4][DSideWall]
+	// window[5] = g.m.panels[5][DSideWall]
+	// window[6] = g.m.panels[6][DSideWall]
 
-	// window[0] = panels[0][DSideWall]
-	// window[1] = panels[1][DOpenWallMiddle]
-	// window[2] = panels[2][DSideWall]
-	// window[3] = panels[3][DEmpty]
-	// window[4] = panels[4][DSideWall]
-	// window[5] = panels[5][DOpenWallMiddle]
-	// window[6] = panels[6][DSideWall]
+	// window[0] = g.m.panels[0][DSideWall]
+	// window[1] = g.m.panels[1][DOpenWallMiddle]
+	// window[2] = g.m.panels[2][DSideWall]
+	// window[3] = g.m.panels[3][DEmpty]
+	// window[4] = g.m.panels[4][DSideWall]
+	// window[5] = g.m.panels[5][DOpenWallMiddle]
+	// window[6] = g.m.panels[6][DSideWall]
 
-	// window[0] = panels[0][DOpenWallNear]
-	// window[1] = panels[1][DSideWall]
-	// window[2] = panels[2][DSideWall]
-	// window[3] = panels[3][DEmpty]
-	// window[4] = panels[4][DSideWall]
-	// window[5] = panels[5][DOpenWallMiddle]
-	// window[6] = panels[6][DSideWall]
+	// window[0] = g.m.panels[0][DOpenWallNear]
+	// window[1] = g.m.panels[1][DSideWall]
+	// window[2] = g.m.panels[2][DSideWall]
+	// window[3] = g.m.panels[3][DEmpty]
+	// window[4] = g.m.panels[4][DSideWall]
+	// window[5] = g.m.panels[5][DOpenWallMiddle]
+	// window[6] = g.m.panels[6][DSideWall]
 
 	p := g.p
 
@@ -152,17 +151,17 @@ func (g *Game) updateView() error {
 	// L
 	switch g.m.getSpace(lp).t {
 	case SpaceWall:
-		g.v[0] = panels[0][DSideWall]
+		g.v[0] = g.m.panels[0][DSideWall]
 	case SpaceEmpty:
-		g.v[0] = panels[0][DOpenWallNear]
+		g.v[0] = g.m.panels[0][DOpenWallNear]
 	}
 
 	// R
 	switch g.m.getSpace(rp).t {
 	case SpaceWall:
-		g.v[6] = panels[6][DSideWall]
+		g.v[6] = g.m.panels[6][DSideWall]
 	case SpaceEmpty:
-		g.v[6] = panels[6][DOpenWallNear]
+		g.v[6] = g.m.panels[6][DOpenWallNear]
 	}
 
 	// Then check front. If it's a wall then panels 1-6 are Wall Near.
@@ -170,11 +169,11 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp) is (wall)")
-		g.v[1] = panels[1][DOpenWallNear]
-		g.v[2] = panels[2][DOpenWallNear]
-		g.v[3] = panels[3][DOpenWallNear]
-		g.v[4] = panels[4][DOpenWallNear]
-		g.v[5] = panels[5][DOpenWallNear]
+		g.v[1] = g.m.panels[1][DOpenWallNear]
+		g.v[2] = g.m.panels[2][DOpenWallNear]
+		g.v[3] = g.m.panels[3][DOpenWallNear]
+		g.v[4] = g.m.panels[4][DOpenWallNear]
+		g.v[5] = g.m.panels[5][DOpenWallNear]
 		return nil
 	case SpaceEmpty:
 		debug.Println("Space in (fp) is (empty)")
@@ -188,9 +187,9 @@ func (g *Game) updateView() error {
 		// L1
 		switch g.m.getSpace(lp).t {
 		case SpaceWall:
-			g.v[1] = panels[1][DSideWall]
+			g.v[1] = g.m.panels[1][DSideWall]
 		case SpaceEmpty:
-			g.v[1] = panels[1][DOpenWallMiddle]
+			g.v[1] = g.m.panels[1][DOpenWallMiddle]
 		default:
 			return ErrBadSpace{lp}
 		}
@@ -198,9 +197,9 @@ func (g *Game) updateView() error {
 		// R1
 		switch g.m.getSpace(rp).t {
 		case SpaceWall:
-			g.v[5] = panels[5][DSideWall]
+			g.v[5] = g.m.panels[5][DSideWall]
 		case SpaceEmpty:
-			g.v[5] = panels[5][DOpenWallMiddle]
+			g.v[5] = g.m.panels[5][DOpenWallMiddle]
 		default:
 			return ErrBadSpace{rp}
 		}
@@ -217,9 +216,9 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp1) is (wall)")
-		g.v[2] = panels[2][DOpenWallMiddle]
-		g.v[3] = panels[3][DOpenWallMiddle]
-		g.v[4] = panels[4][DOpenWallMiddle]
+		g.v[2] = g.m.panels[2][DOpenWallMiddle]
+		g.v[3] = g.m.panels[3][DOpenWallMiddle]
+		g.v[4] = g.m.panels[4][DOpenWallMiddle]
 		return nil
 	case SpaceEmpty:
 		debug.Println("Space in (fp1) is (empty)")
@@ -233,9 +232,9 @@ func (g *Game) updateView() error {
 		// L2
 		switch g.m.getSpace(lp).t {
 		case SpaceWall:
-			g.v[2] = panels[2][DSideWall]
+			g.v[2] = g.m.panels[2][DSideWall]
 		case SpaceEmpty:
-			g.v[2] = panels[2][DOpenWallFar]
+			g.v[2] = g.m.panels[2][DOpenWallFar]
 		default:
 			return ErrBadSpace{lp}
 		}
@@ -243,9 +242,9 @@ func (g *Game) updateView() error {
 		// R2
 		switch g.m.getSpace(rp).t {
 		case SpaceWall:
-			g.v[4] = panels[4][DSideWall]
+			g.v[4] = g.m.panels[4][DSideWall]
 		case SpaceEmpty:
-			g.v[4] = panels[4][DOpenWallFar]
+			g.v[4] = g.m.panels[4][DOpenWallFar]
 		default:
 			return ErrBadSpace{rp}
 		}
@@ -259,7 +258,7 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp2) is (wall)")
-		g.v[3] = panels[3][DOpenWallFar]
+		g.v[3] = g.m.panels[3][DOpenWallFar]
 		return nil
 	case SpaceEmpty:
 		debug.Println("Space in (fp2) is (empty)")
@@ -274,39 +273,48 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp3) is (wall)")
-		g.v[3] = panels[3][DOpenWallFar]
+		g.v[3] = g.m.panels[3][DOpenWallFar]
 	case SpaceEmpty:
 		debug.Println("Space in (fp3) is (empty)")
-		g.v[3] = panels[3][DEmpty]
+		g.v[3] = g.m.panels[3][DEmpty]
 	}
 
 	return nil
 }
 
-// func (v *view) renderPanel(column int, p point) {
-
-// }
-
 func (g *Game) render() string {
 
-	output := "╔════════════════════════╗\n"
+	frames := map[string][]string{
+		"1": {
+			"╔════════════════════════╗\n",
+			"╚════════════════════════╝\n",
+		},
+		"2": {
+			"╔════════════════════════════════════════════╗\n",
+			"╚════════════════════════════════════════════╝\n",
+		},
+	}
+
+	output := frames[g.m.scale][0]
 
 	wallColourMod := 0
 	if g.p.o == 'e' || g.p.o == 'w' {
 		wallColourMod = 1
 	}
 
-	for y := 0; y < displayHeight; y++ {
+	numPanels := 7
+
+	for y := 0; y < g.m.height; y++ {
 		output += "║ "
-		for c := 0; c < 7; c++ {
+		for c := 0; c < numPanels; c++ {
 			panel := g.v[c]
 
 			for _, pxl := range panel[y] {
 				switch pxl {
 				case PW:
-					output += strings.Repeat(string(walls[(wallColourMod%2)]), scale)
+					output += strings.Repeat(string(walls[(wallColourMod%2)]), 2)
 				case PO:
-					output += strings.Repeat(string(walls[(wallColourMod+1)%2]), scale)
+					output += strings.Repeat(string(walls[(wallColourMod+1)%2]), 2)
 				default:
 					output += "  "
 				}
@@ -315,58 +323,5 @@ func (g *Game) render() string {
 		}
 		output += " ║\n"
 	}
-	return output + "╚════════════════════════╝\n"
-}
-
-type windowColumn uint8
-
-// Common sequences
-var (
-	empty345          = windowSlice{{PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}}
-	d06OpenWall       = windowSlice{{PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PF, PF}}
-	d15OpenWallMiddle = windowSlice{{PE, PE}, {PE, PE}, {PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PF, PF}, {PF, PF}, {PF, PF}}
-	d15OpenWallNear   = windowSlice{{PE, PE}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PO, PO}, {PF, PF}}
-	d24SideWall       = windowSlice{{PE}, {PE}, {PE}, {PE}, {PW}, {PF}, {PF}, {PF}, {PF}}
-	d24OpenWallNear   = windowSlice{{PE}, {PO}, {PO}, {PO}, {PO}, {PO}, {PO}, {PO}, {PF}}
-	d24OpenWallMiddle = windowSlice{{PE}, {PE}, {PE}, {PO}, {PO}, {PO}, {PF}, {PF}, {PF}}
-	d24OpenWallFar    = windowSlice{{PE}, {PE}, {PE}, {PE}, {PO}, {PF}, {PF}, {PF}, {PF}}
-)
-
-var panels = map[windowColumn]map[displayType]windowSlice{
-	0: {
-		DSideWall:     {{PW, PE}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PE}},
-		DOpenWallNear: d06OpenWall,
-	},
-	1: {
-		DSideWall:       {{PE, PE}, {PE, PE}, {PW, PE}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PF}, {PF, PF}, {PF, PF}},
-		DOpenWallMiddle: d15OpenWallMiddle,
-		DOpenWallNear:   d15OpenWallNear,
-	},
-	2: {
-		DSideWall:       d24SideWall,
-		DOpenWallNear:   d24OpenWallNear,
-		DOpenWallMiddle: d24OpenWallMiddle,
-		DOpenWallFar:    d24OpenWallFar,
-	},
-	3: {
-		DEmpty:          {{PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}, {PE}},
-		DOpenWallNear:   d24OpenWallNear,
-		DOpenWallMiddle: d24OpenWallMiddle,
-		DOpenWallFar:    d24OpenWallFar,
-	},
-	4: {
-		DSideWall:       d24SideWall,
-		DOpenWallNear:   d24OpenWallNear,
-		DOpenWallMiddle: d24OpenWallMiddle,
-		DOpenWallFar:    d24OpenWallFar,
-	},
-	5: {
-		DSideWall:       {{PE, PE}, {PE, PE}, {PE, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PF, PW}, {PF, PF}, {PF, PF}},
-		DOpenWallMiddle: d15OpenWallMiddle,
-		DOpenWallNear:   d15OpenWallNear,
-	},
-	6: {
-		DSideWall:     {{PE, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PW, PW}, {PF, PW}},
-		DOpenWallNear: d06OpenWall,
-	},
+	return output + frames[g.m.scale][1] + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
 }

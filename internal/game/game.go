@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
 	"github.com/pkg/errors"
@@ -38,9 +39,6 @@ const (
 	SpacePlayerStart           = 'p'
 )
 
-const displayWidth = 11
-const displayHeight = 9
-
 type (
 	spaceType uint8
 
@@ -56,7 +54,8 @@ func New() *Game {
 			o: 'n',
 		},
 		m: &Maze{
-			grid: grid{},
+			grid:   grid{},
+			panels: nil,
 		},
 		v:    &view{},
 		move: moveVector{0, -1},
@@ -74,17 +73,33 @@ func Swatch() string {
 
 // Run performs the main game loop
 func (g *Game) Run() error {
+	// TODO split out scaler
+	g.m.scale = "1"
+	if s := os.Getenv("SCALE"); s != "" {
+		g.m.scale = s
+	}
+	if err := g.setUpScaledPanels(); err != nil {
+		return errors.WithMessage(err, "failed to set up scaling")
+	}
+
 	// TODO randomly (totally or from set of criteria) select a maze
 	// TODO would be nice to able to dynamically create one!
-	if err := g.importMaze(mazes[0]); err != nil {
+	if err := g.importMaze(mazes[1]); err != nil {
 		return errors.WithMessage(err, "failed to import maze")
 	}
 
 	for {
+		if !debug.Debug {
+			// TODO compile for windows
+			cmd := exec.Command("clear")
+			cmd.Stdout = os.Stdout
+			cmd.Run()
+		}
+
 		if err := g.updateView(); err != nil {
 			return errors.WithMessage(err, "failed to update view")
 		}
-		fmt.Println(g.render())
+		fmt.Print(g.render())
 
 		reader := bufio.NewReader(os.Stdin)
 
@@ -105,17 +120,17 @@ func (g *Game) Run() error {
 			g.moveBackwards()
 			break
 		case 'd':
-			fallthrough
-		case 'e':
 			debug.Println("Turn right")
 			g.rotateRight()
 			break
 		case 'a':
-			fallthrough
-		case 'q':
 			debug.Println("Turn left")
 			g.rotateLeft()
 			break
+		case 'q':
+			debug.Println("Exiting game")
+			fmt.Println("Goodbye!")
+			return nil
 		}
 		debug.Printf("Player is now at (%d,%d). Facing (%c)\n", g.p.x, g.p.y, g.p.o)
 	}
@@ -123,8 +138,8 @@ func (g *Game) Run() error {
 
 func (g *Game) importMaze(m mazeDefinition) error {
 
-	height := len(m)
-	width := len(m[0])
+	height := g.m.height
+	width := g.m.width
 
 	debug.Printf("Importing maze: w[%d] h[%d]\n", width, height)
 
