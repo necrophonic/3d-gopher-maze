@@ -105,8 +105,8 @@ func (g *Game) setUpScaledPanels() error {
 		return fmt.Errorf("Unrecognised scale value: %s", scale)
 	}
 
-	g.m.height = cmpts.height
-	g.m.width = cmpts.width
+	g.v.h = cmpts.height
+	g.v.w = cmpts.width
 
 	g.m.panels = map[windowColumn]map[displayType]windowSlice{
 		0: {

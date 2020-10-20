@@ -84,7 +84,7 @@ func (g *Game) Run() error {
 
 	// TODO randomly (totally or from set of criteria) select a maze
 	// TODO would be nice to able to dynamically create one!
-	if err := g.importMaze(mazes[1]); err != nil {
+	if err := g.importMaze(mazes[2]); err != nil {
 		return errors.WithMessage(err, "failed to import maze")
 	}
 
@@ -134,40 +134,4 @@ func (g *Game) Run() error {
 		}
 		debug.Printf("Player is now at (%d,%d). Facing (%c)\n", g.p.x, g.p.y, g.p.o)
 	}
-}
-
-func (g *Game) importMaze(m mazeDefinition) error {
-
-	height := g.m.height
-	width := g.m.width
-
-	debug.Printf("Importing maze: w[%d] h[%d]\n", width, height)
-
-	playerFound := false
-
-	newMaze := make([][]space, height)
-	for y := range m {
-		newMaze[y] = make([]space, width)
-		for x, sp := range m[y] {
-			// If this is a player start point then we want to
-			// mark that point, and set the space as "empty"
-			if sp == SpacePlayerStart {
-				g.p.x = int8(x)
-				g.p.y = int8(y)
-				sp = uint8(SpaceEmpty)
-				playerFound = true
-				debug.Printf("Found player start point at (%d,%d)", x, y)
-			}
-			newMaze[y][x] = space{
-				t: spaceType(sp),
-			}
-		}
-	}
-
-	if !playerFound {
-		return errors.New("bad maze definition: no player start point")
-	}
-
-	g.m.grid = newMaze
-	return nil
 }
