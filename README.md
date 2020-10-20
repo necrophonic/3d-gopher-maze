@@ -80,6 +80,6 @@ Either type `q` as a command, or use `ctrl-c`
 
 ## License
 
-Copyright &copy 2020 J Gregory
+Copyright &copy; 2020 J Gregory
 
 Released under MIT license, see [LICENSE](LICENSE) for details.
