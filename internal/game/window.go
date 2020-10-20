@@ -2,19 +2,25 @@ package game
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
 )
 
-type pixel uint8
+type (
+	pixel       uint8
+	pixelMatrix [][]pixel
+)
+
 type windowSlice [][]pixel
 type point struct {
 	x int8
 	y int8
 }
 
+// TODO refactor swtches
 var walls = [2]rune{'▒', '░'}
 
 // ErrBadSpace is returned if the space definition in a
@@ -34,6 +40,10 @@ const (
 	PE              // Empty
 	PF              // Floor
 	PC              // Ceiling
+	GB              // Gopher body
+)
+const (
+	TN = 32 // Transparent (used for overlays)
 )
 
 type displayType uint8
@@ -53,8 +63,6 @@ type view struct {
 	window [7]windowSlice
 }
 
-// type view [7]windowSlice
-
 func (g *Game) updateView() error {
 
 	// The window is comprised of 7 vertical slices
@@ -65,8 +73,6 @@ func (g *Game) updateView() error {
 	//   |  |  | | | |  |  |
 	//   |  |  | | | |  |  |
 	//
-	// window := [7]windowSlice{}
-
 	// Scan around us to render (adjust for direction!)
 	//
 	//    +----+----+----+
@@ -79,8 +85,6 @@ func (g *Game) updateView() error {
 	//    | L  | P  | R  |
 	//    +----+----+----+
 
-	// ------
-
 	// g.v.window[0] = g.m.panels[0][DSideWall]
 	// g.v.window[1] = g.m.panels[1][DSideWall]
 	// g.v.window[2] = g.m.panels[2][DSideWall]
@@ -88,30 +92,6 @@ func (g *Game) updateView() error {
 	// g.v.window[4] = g.m.panels[4][DSideWall]
 	// g.v.window[5] = g.m.panels[5][DSideWall]
 	// g.v.window[6] = g.m.panels[6][DSideWall]
-
-	// window[0] = g.m.panels[0][DOpenWallNear]
-	// window[1] = g.m.panels[1][DSideWall]
-	// window[2] = g.m.panels[2][DOpenWallFar]
-	// window[3] = g.m.panels[3][DOpenWallFar]
-	// window[4] = g.m.panels[4][DSideWall]
-	// window[5] = g.m.panels[5][DSideWall]
-	// window[6] = g.m.panels[6][DSideWall]
-
-	// window[0] = g.m.panels[0][DSideWall]
-	// window[1] = g.m.panels[1][DOpenWallMiddle]
-	// window[2] = g.m.panels[2][DSideWall]
-	// window[3] = g.m.panels[3][DEmpty]
-	// window[4] = g.m.panels[4][DSideWall]
-	// window[5] = g.m.panels[5][DOpenWallMiddle]
-	// window[6] = g.m.panels[6][DSideWall]
-
-	// window[0] = g.m.panels[0][DOpenWallNear]
-	// window[1] = g.m.panels[1][DSideWall]
-	// window[2] = g.m.panels[2][DSideWall]
-	// window[3] = g.m.panels[3][DEmpty]
-	// window[4] = g.m.panels[4][DSideWall]
-	// window[5] = g.m.panels[5][DOpenWallMiddle]
-	// window[6] = g.m.panels[6][DSideWall]
 
 	p := g.p
 
@@ -288,7 +268,56 @@ func (g *Game) updateView() error {
 	return nil
 }
 
-func (g *Game) render() string {
+// func (g *Game) render() string {
+
+// 	frames := map[string][]string{
+// 		"1": {
+// 			"╔════════════════════════╗\n",
+// 			"╚════════════════════════╝\n",
+// 		},
+// 		"2": {
+// 			"╔════════════════════════════════════════════╗\n",
+// 			"╚════════════════════════════════════════════╝\n",
+// 		},
+// 	}
+
+// 	output := frames[g.m.scale][0]
+
+// 	wallColourMod := 0
+// 	if g.p.o == 'e' || g.p.o == 'w' {
+// 		wallColourMod = 1
+// 	}
+
+// 	numPanels := 7
+
+// 	for y := 0; y < g.v.h; y++ {
+// 		output += "║ "
+// 		for c := 0; c < numPanels; c++ {
+// 			panel := g.v.window[c]
+
+// 			for _, pxl := range panel[y] {
+// 				switch pxl {
+// 				case PW:
+// 					output += strings.Repeat(string(walls[(wallColourMod%2)]), 2)
+// 				case PO:
+// 					output += strings.Repeat(string(walls[(wallColourMod+1)%2]), 2)
+// 				default:
+// 					output += "  "
+// 				}
+// 			}
+
+// 		}
+// 		output += " ║\n"
+// 	}
+
+// 	// Sprite overlays
+// 	// ...
+// 	// ...
+
+// 	return output + frames[g.m.scale][1] + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
+// }
+
+func (g *Game) render() (string, error) {
 
 	frames := map[string][]string{
 		"1": {
@@ -301,7 +330,9 @@ func (g *Game) render() string {
 		},
 	}
 
-	output := frames[g.m.scale][0]
+	// Construct the viewport first before we overlay and sprites.
+	// This comprises a set of virtual scanlines.
+	scanlines := make([][]uint8, g.v.h)
 
 	wallColourMod := 0
 	if g.p.o == 'e' || g.p.o == 'w' {
@@ -311,23 +342,55 @@ func (g *Game) render() string {
 	numPanels := 7
 
 	for y := 0; y < g.v.h; y++ {
-		output += "║ "
+		scanline := ""
 		for c := 0; c < numPanels; c++ {
 			panel := g.v.window[c]
 
 			for _, pxl := range panel[y] {
 				switch pxl {
 				case PW:
-					output += strings.Repeat(string(walls[(wallColourMod%2)]), 2)
+					scanline += strings.Repeat(string(walls[(wallColourMod%2)]), 2)
 				case PO:
-					output += strings.Repeat(string(walls[(wallColourMod+1)%2]), 2)
+					scanline += strings.Repeat(string(walls[(wallColourMod+1)%2]), 2)
 				default:
-					output += "  "
+					scanline += "  "
 				}
 			}
 
 		}
-		output += " ║\n"
+		scanlines[y] = []uint8(scanline)
 	}
-	return output + frames[g.m.scale][1] + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
+
+	// Sprite overlays
+	// ...
+	// ...
+	// TODO factor this into gopher bahaviour
+	gopherSprite, err := g.g.sprite(1)
+	if err != nil {
+		return "", errors.New("error rendering viewport")
+	}
+	for si, pixels := range gopherSprite {
+		fmt.Println(pixels)
+		for i, pixel := range pixels {
+			switch pixel {
+			case TN:
+				// Transparent, so just skip it
+				continue
+			default:
+				debug.Println("PIXEL IS ", pixel, " at ", i)
+				scanlines[si][i] = uint8(pixel)
+			}
+		}
+	}
+
+	// ...
+	// ...
+
+	output := frames[g.m.scale][0]
+	for _, sl := range scanlines {
+		output += fmt.Sprintf("║ %s ║\n", sl)
+	}
+	output += frames[g.m.scale][1] + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
+
+	return output, nil
 }

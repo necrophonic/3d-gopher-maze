@@ -29,6 +29,7 @@ type (
 		m    *Maze
 		v    *view
 		move moveVector
+		g    *gopher
 	}
 )
 
@@ -59,6 +60,7 @@ func New() *Game {
 		},
 		v:    &view{},
 		move: moveVector{0, -1},
+		g:    &gopher{},
 	}
 }
 
