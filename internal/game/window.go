@@ -47,7 +47,13 @@ const (
 	DEmpty
 )
 
-type view [7]windowSlice
+type view struct {
+	w      int
+	h      int
+	window [7]windowSlice
+}
+
+// type view [7]windowSlice
 
 func (g *Game) updateView() error {
 
@@ -75,13 +81,13 @@ func (g *Game) updateView() error {
 
 	// ------
 
-	// g.v[0] = g.m.panels[0][DSideWall]
-	// g.v[1] = g.m.panels[1][DSideWall]
-	// g.v[2] = g.m.panels[2][DSideWall]
-	// g.v[3] = g.m.panels[3][DEmpty]
-	// g.v[4] = g.m.panels[4][DSideWall]
-	// g.v[5] = g.m.panels[5][DSideWall]
-	// g.v[6] = g.m.panels[6][DSideWall]
+	// g.v.window[0] = g.m.panels[0][DSideWall]
+	// g.v.window[1] = g.m.panels[1][DSideWall]
+	// g.v.window[2] = g.m.panels[2][DSideWall]
+	// g.v.window[3] = g.m.panels[3][DEmpty]
+	// g.v.window[4] = g.m.panels[4][DSideWall]
+	// g.v.window[5] = g.m.panels[5][DSideWall]
+	// g.v.window[6] = g.m.panels[6][DSideWall]
 
 	// window[0] = g.m.panels[0][DOpenWallNear]
 	// window[1] = g.m.panels[1][DSideWall]
@@ -151,17 +157,17 @@ func (g *Game) updateView() error {
 	// L
 	switch g.m.getSpace(lp).t {
 	case SpaceWall:
-		g.v[0] = g.m.panels[0][DSideWall]
+		g.v.window[0] = g.m.panels[0][DSideWall]
 	case SpaceEmpty:
-		g.v[0] = g.m.panels[0][DOpenWallNear]
+		g.v.window[0] = g.m.panels[0][DOpenWallNear]
 	}
 
 	// R
 	switch g.m.getSpace(rp).t {
 	case SpaceWall:
-		g.v[6] = g.m.panels[6][DSideWall]
+		g.v.window[6] = g.m.panels[6][DSideWall]
 	case SpaceEmpty:
-		g.v[6] = g.m.panels[6][DOpenWallNear]
+		g.v.window[6] = g.m.panels[6][DOpenWallNear]
 	}
 
 	// Then check front. If it's a wall then panels 1-6 are Wall Near.
@@ -169,11 +175,11 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp) is (wall)")
-		g.v[1] = g.m.panels[1][DOpenWallNear]
-		g.v[2] = g.m.panels[2][DOpenWallNear]
-		g.v[3] = g.m.panels[3][DOpenWallNear]
-		g.v[4] = g.m.panels[4][DOpenWallNear]
-		g.v[5] = g.m.panels[5][DOpenWallNear]
+		g.v.window[1] = g.m.panels[1][DOpenWallNear]
+		g.v.window[2] = g.m.panels[2][DOpenWallNear]
+		g.v.window[3] = g.m.panels[3][DOpenWallNear]
+		g.v.window[4] = g.m.panels[4][DOpenWallNear]
+		g.v.window[5] = g.m.panels[5][DOpenWallNear]
 		return nil
 	case SpaceEmpty:
 		debug.Println("Space in (fp) is (empty)")
@@ -187,9 +193,9 @@ func (g *Game) updateView() error {
 		// L1
 		switch g.m.getSpace(lp).t {
 		case SpaceWall:
-			g.v[1] = g.m.panels[1][DSideWall]
+			g.v.window[1] = g.m.panels[1][DSideWall]
 		case SpaceEmpty:
-			g.v[1] = g.m.panels[1][DOpenWallMiddle]
+			g.v.window[1] = g.m.panels[1][DOpenWallMiddle]
 		default:
 			return ErrBadSpace{lp}
 		}
@@ -197,9 +203,9 @@ func (g *Game) updateView() error {
 		// R1
 		switch g.m.getSpace(rp).t {
 		case SpaceWall:
-			g.v[5] = g.m.panels[5][DSideWall]
+			g.v.window[5] = g.m.panels[5][DSideWall]
 		case SpaceEmpty:
-			g.v[5] = g.m.panels[5][DOpenWallMiddle]
+			g.v.window[5] = g.m.panels[5][DOpenWallMiddle]
 		default:
 			return ErrBadSpace{rp}
 		}
@@ -216,9 +222,9 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp1) is (wall)")
-		g.v[2] = g.m.panels[2][DOpenWallMiddle]
-		g.v[3] = g.m.panels[3][DOpenWallMiddle]
-		g.v[4] = g.m.panels[4][DOpenWallMiddle]
+		g.v.window[2] = g.m.panels[2][DOpenWallMiddle]
+		g.v.window[3] = g.m.panels[3][DOpenWallMiddle]
+		g.v.window[4] = g.m.panels[4][DOpenWallMiddle]
 		return nil
 	case SpaceEmpty:
 		debug.Println("Space in (fp1) is (empty)")
@@ -232,9 +238,9 @@ func (g *Game) updateView() error {
 		// L2
 		switch g.m.getSpace(lp).t {
 		case SpaceWall:
-			g.v[2] = g.m.panels[2][DSideWall]
+			g.v.window[2] = g.m.panels[2][DSideWall]
 		case SpaceEmpty:
-			g.v[2] = g.m.panels[2][DOpenWallFar]
+			g.v.window[2] = g.m.panels[2][DOpenWallFar]
 		default:
 			return ErrBadSpace{lp}
 		}
@@ -242,9 +248,9 @@ func (g *Game) updateView() error {
 		// R2
 		switch g.m.getSpace(rp).t {
 		case SpaceWall:
-			g.v[4] = g.m.panels[4][DSideWall]
+			g.v.window[4] = g.m.panels[4][DSideWall]
 		case SpaceEmpty:
-			g.v[4] = g.m.panels[4][DOpenWallFar]
+			g.v.window[4] = g.m.panels[4][DOpenWallFar]
 		default:
 			return ErrBadSpace{rp}
 		}
@@ -258,7 +264,7 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp2) is (wall)")
-		g.v[3] = g.m.panels[3][DOpenWallFar]
+		g.v.window[3] = g.m.panels[3][DOpenWallFar]
 		return nil
 	case SpaceEmpty:
 		debug.Println("Space in (fp2) is (empty)")
@@ -273,10 +279,10 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp3) is (wall)")
-		g.v[3] = g.m.panels[3][DOpenWallFar]
+		g.v.window[3] = g.m.panels[3][DOpenWallFar]
 	case SpaceEmpty:
 		debug.Println("Space in (fp3) is (empty)")
-		g.v[3] = g.m.panels[3][DEmpty]
+		g.v.window[3] = g.m.panels[3][DEmpty]
 	}
 
 	return nil
@@ -304,10 +310,10 @@ func (g *Game) render() string {
 
 	numPanels := 7
 
-	for y := 0; y < g.m.height; y++ {
+	for y := 0; y < g.v.h; y++ {
 		output += "║ "
 		for c := 0; c < numPanels; c++ {
-			panel := g.v[c]
+			panel := g.v.window[c]
 
 			for _, pxl := range panel[y] {
 				switch pxl {
