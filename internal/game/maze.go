@@ -4,7 +4,11 @@ type grid [][]space
 
 // Maze is a fully built maze: Maze[y][x]
 type Maze struct {
-	grid grid
+	grid   grid
+	panels map[windowColumn]map[displayType]windowSlice
+	scale  string
+	height int
+	width  int
 }
 
 func (m *Maze) getSpace(p point) space {
@@ -29,6 +33,17 @@ var mazes = []mazeDefinition{
 		{'X', ' ', 'X', 'X', ' ', 'X', 'X', ' ', 'X'},
 		{'X', ' ', 'X', 'X', ' ', 'X', 'X', ' ', 'X'},
 		{'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'},
+		{'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'},
+	},
+	{
+		{'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'},
+		{'X', ' ', 'X', 'X', ' ', ' ', ' ', ' ', 'X'},
+		{'X', ' ', ' ', ' ', ' ', 'X', 'X', ' ', 'X'},
+		{'X', 'X', 'X', 'X', ' ', 'X', 'X', ' ', 'X'},
+		{'X', 'X', ' ', ' ', ' ', ' ', ' ', ' ', 'X'},
+		{'X', ' ', ' ', 'X', ' ', 'X', 'X', ' ', 'X'},
+		{'X', 'X', 'X', 'X', ' ', 'X', 'X', ' ', 'X'},
+		{'X', ' ', ' ', ' ', ' ', ' ', 'X', 'p', 'X'},
 		{'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'},
 	},
 }
