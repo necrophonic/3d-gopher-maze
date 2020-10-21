@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
+	"github.com/necrophonic/gopher-maze/internal/game/element"
 )
 
 type grid [][]space
@@ -11,7 +12,7 @@ type grid [][]space
 // Maze is a fully built maze: Maze[y][x]
 type Maze struct {
 	grid   grid
-	panels map[windowColumn]map[displayType]windowSlice
+	panels map[int]map[string]element.PixelMatrix
 	scale  string
 	height int
 	width  int

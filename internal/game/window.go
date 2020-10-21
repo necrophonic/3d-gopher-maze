@@ -2,19 +2,22 @@ package game
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
+	"github.com/necrophonic/gopher-maze/internal/game/element"
 )
 
 type (
-	pixel       uint8
-	pixelMatrix [][]pixel
+	// pixel       rune
+	pixelMatrix [][]rune
 )
 
-type windowSlice [][]pixel
+const numPanels = 7
+const viewHeight = 9
+const viewWidth = 11
+
+type windowSlice [][]rune
 type point struct {
 	x int8
 	y int8
@@ -33,35 +36,43 @@ func (e ErrBadSpace) Error() string {
 	return fmt.Sprintf("bad space definition at (%d,%d)", e.p.x, e.p.y)
 }
 
-// Constants defining screen pixels to display in the view window
-const (
-	PW pixel = iota // Wall
-	PO              // Open
-	PE              // Empty
-	PF              // Floor
-	PC              // Ceiling
-	GB              // Gopher body
-)
-const (
-	TN = 32 // Transparent (used for overlays)
-)
+// ErrBadDistance is returned if a distance used is not "Near", "Middle" or "Far"
+type ErrBadDistance struct {
+	d string
+}
+
+func (e ErrBadDistance) Error() string {
+	return fmt.Sprintf("bad distance definition '%s'", e.d)
+}
+
+// // Constants defining screen pixels to display in the view window
+// const (
+// 	PW uint8 = iota // Wall
+// 	PO              // Open
+// 	PE              // Empty
+// 	PF              // Floor
+// 	PC              // Ceiling
+// 	GB              // Gopher body
+// )
+// const (
+// 	// TN represents transparent (used for overlays)
+// 	TN = 32
+// )
 
 type displayType uint8
 
 // Wall panel dispositions
 const (
-	DSideWall displayType = iota // A closed wall
-	DOpenWallNear
-	DOpenWallMiddle
-	DOpenWallFar
-	DEmpty
+	DSideWall       = "sidewall"
+	DOpenWallNear   = "opennewar"
+	DOpenWallMiddle = "openmiddle"
+	DOpenWallFar    = "openfar"
+	DEmpty          = "empty"
 )
 
-type view struct {
-	w      int
-	h      int
-	window [7]windowSlice
-}
+// type view struct {
+// 	window [numPanels]element.PixelMatrix
+// }
 
 func (g *Game) updateView() error {
 
@@ -85,16 +96,6 @@ func (g *Game) updateView() error {
 	//    | L  | P  | R  |
 	//    +----+----+----+
 
-	// g.v.window[0] = g.m.panels[0][DSideWall]
-	// g.v.window[1] = g.m.panels[1][DSideWall]
-	// g.v.window[2] = g.m.panels[2][DSideWall]
-	// g.v.window[3] = g.m.panels[3][DEmpty]
-	// g.v.window[4] = g.m.panels[4][DSideWall]
-	// g.v.window[5] = g.m.panels[5][DSideWall]
-	// g.v.window[6] = g.m.panels[6][DSideWall]
-
-	p := g.p
-
 	// TODO Assuming NORTH look for now
 
 	// Determine the points to our left and right and then we can
@@ -104,6 +105,7 @@ func (g *Game) updateView() error {
 	var fp point
 
 	var mx, my int8
+	p := g.p
 
 	switch p.o {
 	case 'n':
@@ -132,126 +134,44 @@ func (g *Game) updateView() error {
 		my = 0
 	}
 
-	// Check left (L) and right (R) first
+	var isWall bool
+	var err error
 
-	// L
-	switch g.m.getSpace(lp).t {
-	case SpaceWall:
-		g.v.window[0] = g.m.panels[0][DSideWall]
-	case SpaceEmpty:
-		g.v.window[0] = g.m.panels[0][DOpenWallNear]
+	// L, R and F
+	isWall, err = g.renderSpace(lp, rp, fp, 0, 6, "Near")
+	if err != nil {
+		return err
 	}
-
-	// R
-	switch g.m.getSpace(rp).t {
-	case SpaceWall:
-		g.v.window[6] = g.m.panels[6][DSideWall]
-	case SpaceEmpty:
-		g.v.window[6] = g.m.panels[6][DOpenWallNear]
-	}
-
-	// Then check front. If it's a wall then panels 1-6 are Wall Near.
-	// Otherwise we can check L1 and R1
-	switch g.m.getSpace(fp).t {
-	case SpaceWall:
-		debug.Println("Space in (fp) is (wall)")
-		g.v.window[1] = g.m.panels[1][DOpenWallNear]
-		g.v.window[2] = g.m.panels[2][DOpenWallNear]
-		g.v.window[3] = g.m.panels[3][DOpenWallNear]
-		g.v.window[4] = g.m.panels[4][DOpenWallNear]
-		g.v.window[5] = g.m.panels[5][DOpenWallNear]
+	if isWall {
 		return nil
-	case SpaceEmpty:
-		debug.Println("Space in (fp) is (empty)")
-
-		// Move up a row in the direction we're facing
-		lp = point{lp.x + mx, lp.y + my}
-		rp = point{rp.x + mx, rp.y + my}
-
-		debug.Printf("Checking L1 (%d,%d)[%c] R1 (%d,%d)[%c]", lp.x, lp.y, g.m.getSpace(lp).t, rp.x, rp.y, g.m.getSpace(rp).t)
-
-		// L1
-		switch g.m.getSpace(lp).t {
-		case SpaceWall:
-			g.v.window[1] = g.m.panels[1][DSideWall]
-		case SpaceEmpty:
-			g.v.window[1] = g.m.panels[1][DOpenWallMiddle]
-		default:
-			return ErrBadSpace{lp}
-		}
-
-		// R1
-		switch g.m.getSpace(rp).t {
-		case SpaceWall:
-			g.v.window[5] = g.m.panels[5][DSideWall]
-		case SpaceEmpty:
-			g.v.window[5] = g.m.panels[5][DOpenWallMiddle]
-		default:
-			return ErrBadSpace{rp}
-		}
-
 	}
 
-	// FP 1 -------
-
-	// Move forward again
+	// L1, R1 and F1
+	lp = point{lp.x + mx, lp.y + my}
+	rp = point{rp.x + mx, rp.y + my}
 	fp = point{fp.x + mx, fp.y + my}
 
-	// Then check front. If it's a wall then panels 1-6 are Wall Near.
-	// Otherwise we can check L1 and R1
-	switch g.m.getSpace(fp).t {
-	case SpaceWall:
-		debug.Println("Space in (fp1) is (wall)")
-		g.v.window[2] = g.m.panels[2][DOpenWallMiddle]
-		g.v.window[3] = g.m.panels[3][DOpenWallMiddle]
-		g.v.window[4] = g.m.panels[4][DOpenWallMiddle]
+	debug.Printf("Checking L1 (%d,%d)[%c] R1 (%d,%d)[%c]", lp.x, lp.y, g.m.getSpace(lp).t, rp.x, rp.y, g.m.getSpace(rp).t)
+	isWall, err = g.renderSpace(lp, rp, fp, 1, 5, "Middle")
+	if err != nil {
+		return err
+	}
+	if isWall {
 		return nil
-	case SpaceEmpty:
-		debug.Println("Space in (fp1) is (empty)")
-
-		// Move up a row in the direction we're facing
-		lp = point{lp.x + mx, lp.y + my}
-		rp = point{rp.x + mx, rp.y + my}
-
-		debug.Printf("Checking L2 (%d,%d)[%c] R2 (%d,%d)[%c]", lp.x, lp.y, g.m.getSpace(lp).t, rp.x, rp.y, g.m.getSpace(rp).t)
-
-		// L2
-		switch g.m.getSpace(lp).t {
-		case SpaceWall:
-			g.v.window[2] = g.m.panels[2][DSideWall]
-		case SpaceEmpty:
-			g.v.window[2] = g.m.panels[2][DOpenWallFar]
-		default:
-			return ErrBadSpace{lp}
-		}
-
-		// R2
-		switch g.m.getSpace(rp).t {
-		case SpaceWall:
-			g.v.window[4] = g.m.panels[4][DSideWall]
-		case SpaceEmpty:
-			g.v.window[4] = g.m.panels[4][DOpenWallFar]
-		default:
-			return ErrBadSpace{rp}
-		}
-
 	}
 
-	// FP 2 -------
-
-	// Move forward again
+	// L2, R2 and F2
+	lp = point{lp.x + mx, lp.y + my}
+	rp = point{rp.x + mx, rp.y + my}
 	fp = point{fp.x + mx, fp.y + my}
-	switch g.m.getSpace(fp).t {
-	case SpaceWall:
-		debug.Println("Space in (fp2) is (wall)")
-		g.v.window[3] = g.m.panels[3][DOpenWallFar]
-		return nil
-	case SpaceEmpty:
-		debug.Println("Space in (fp2) is (empty)")
 
-		// Move up a row in the direction we're facing
-		lp = point{lp.x + mx, lp.y + my}
-		rp = point{rp.x + mx, rp.y + my}
+	debug.Printf("Checking L2 (%d,%d)[%c] R2 (%d,%d)[%c]", lp.x, lp.y, g.m.getSpace(lp).t, rp.x, rp.y, g.m.getSpace(rp).t)
+	isWall, err = g.renderSpace(lp, rp, fp, 2, 4, "Far")
+	if err != nil {
+		return err
+	}
+	if isWall {
+		return nil
 	}
 
 	// Final step
@@ -259,138 +179,142 @@ func (g *Game) updateView() error {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Println("Space in (fp3) is (wall)")
-		g.v.window[3] = g.m.panels[3][DOpenWallFar]
+		g.v[3] = element.Panels[3]["OpenWallFar"]
 	case SpaceEmpty:
 		debug.Println("Space in (fp3) is (empty)")
-		g.v.window[3] = g.m.panels[3][DEmpty]
+		g.v[3] = element.Panels[3]["Empty"]
+	default:
+		return ErrBadSpace{fp}
 	}
 
 	return nil
 }
 
-// func (g *Game) render() string {
+func (g *Game) renderSpace(lp, rp, fp point, lpanel, rpanel int, distance string) (isWall bool, err error) {
+	if err = g.renderLeftRight(lp, lpanel, distance); err != nil {
+		return false, err
+	}
+	if err = g.renderLeftRight(rp, rpanel, distance); err != nil {
+		return false, err
+	}
+	if isWall, err = g.renderFront(fp, "Far"); err != nil {
+		return false, err
+	}
+	return isWall, nil
+}
 
-// 	frames := map[string][]string{
-// 		"1": {
-// 			"╔════════════════════════╗\n",
-// 			"╚════════════════════════╝\n",
-// 		},
-// 		"2": {
-// 			"╔════════════════════════════════════════════╗\n",
-// 			"╚════════════════════════════════════════════╝\n",
-// 		},
-// 	}
+func (g *Game) renderLeftRight(p point, panel int, distance string) error {
+	switch g.m.getSpace(p).t {
+	case SpaceWall:
+		g.v[panel] = element.Panels[panel]["SideWall"]
+		debug.Printf("Render point (%v) as wall", p)
+	case SpaceEmpty:
+		g.v[panel] = element.Panels[panel]["OpenWall"+distance]
+		debug.Printf("Render point (%v) as open", p)
+	default:
+		return ErrBadSpace{p}
+	}
+	return nil
+}
 
-// 	output := frames[g.m.scale][0]
-
-// 	wallColourMod := 0
-// 	if g.p.o == 'e' || g.p.o == 'w' {
-// 		wallColourMod = 1
-// 	}
-
-// 	numPanels := 7
-
-// 	for y := 0; y < g.v.h; y++ {
-// 		output += "║ "
-// 		for c := 0; c < numPanels; c++ {
-// 			panel := g.v.window[c]
-
-// 			for _, pxl := range panel[y] {
-// 				switch pxl {
-// 				case PW:
-// 					output += strings.Repeat(string(walls[(wallColourMod%2)]), 2)
-// 				case PO:
-// 					output += strings.Repeat(string(walls[(wallColourMod+1)%2]), 2)
-// 				default:
-// 					output += "  "
-// 				}
-// 			}
-
-// 		}
-// 		output += " ║\n"
-// 	}
-
-// 	// Sprite overlays
-// 	// ...
-// 	// ...
-
-// 	return output + frames[g.m.scale][1] + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
-// }
+func (g *Game) renderFront(fp point, distance string) (bool, error) {
+	switch g.m.getSpace(fp).t {
+	case SpaceWall:
+		switch distance {
+		case "Near":
+			g.v[1] = element.Panels[1]["OpenWall"+distance]
+			g.v[5] = element.Panels[5]["OpenWall"+distance]
+			fallthrough
+		case "Middle":
+			g.v[2] = element.Panels[2]["OpenWall"+distance]
+			g.v[4] = element.Panels[4]["OpenWall"+distance]
+			fallthrough
+		case "Far":
+			g.v[3] = element.Panels[3]["OpenWall"+distance]
+		default:
+			return false, ErrBadDistance{distance}
+		}
+		return true, nil
+	case SpaceEmpty:
+		return false, nil
+	}
+	return false, ErrBadSpace{fp}
+}
 
 func (g *Game) render() (string, error) {
 
-	frames := map[string][]string{
-		"1": {
-			"╔════════════════════════╗\n",
-			"╚════════════════════════╝\n",
-		},
-		"2": {
-			"╔════════════════════════════════════════════╗\n",
-			"╚════════════════════════════════════════════╝\n",
-		},
-	}
-
 	// Construct the viewport first before we overlay and sprites.
 	// This comprises a set of virtual scanlines.
-	scanlines := make([][]uint8, g.v.h)
+	scanlines := make(pixelMatrix, viewHeight)
 
 	wallColourMod := 0
 	if g.p.o == 'e' || g.p.o == 'w' {
 		wallColourMod = 1
 	}
 
-	numPanels := 7
+	// SPRITE
+	// overlay, err := g.g.sprite(1)
+	// if err != nil {
+	// 	return "", errors.New("error rendering gopther sprite to viewport")
+	// }
+	// SPRITE
 
-	for y := 0; y < g.v.h; y++ {
-		scanline := ""
+	for y := 0; y < viewHeight; y++ {
+		debug.Println("Render scan line:", y)
+
+		// Instantiate to the width * 2 as each "pixel" block is
+		// actally two runes wide
+		scanline := make([]rune, viewWidth*2)
+
+		// Mark the absolute x position as we read through the panels so
+		// we can replace with any overlay in the correct positions as and
+		// when appropriate.
+		x := 0
+
 		for c := 0; c < numPanels; c++ {
-			panel := g.v.window[c]
+			panel := g.v[c][y]
+			debug.Println("Panel", c)
 
-			for _, pxl := range panel[y] {
-				switch pxl {
-				case PW:
-					scanline += strings.Repeat(string(walls[(wallColourMod%2)]), 2)
-				case PO:
-					scanline += strings.Repeat(string(walls[(wallColourMod+1)%2]), 2)
+			for _, pixel := range panel {
+
+				// 	// debug.Printf("Overlay on panel %2d at %d, %d\n", c, x, y)
+				// 	// if overlay[y][x] != TN {
+				// 	// 	scanline += "XX"
+				// 	// 	continue
+				// 	// }
+
+				// TODO Better handle doubling - interpolate into slices?
+				switch pixel {
+				case element.W:
+					debug.Println(" Pixel WALL")
+					scanline[x] = walls[(wallColourMod % 2)]
+					scanline[x+1] = walls[(wallColourMod % 2)]
+				case element.O:
+					debug.Println(" Pixel OPEN")
+					scanline[x] = walls[((wallColourMod + 1) % 2)]
+					scanline[x+1] = walls[((wallColourMod + 1) % 2)]
 				default:
-					scanline += "  "
+					debug.Println(" Pixel TRANSPARENT")
+					scanline[x] = rune(' ')
+					scanline[x+1] = rune(' ')
 				}
+				x += 2
 			}
 
 		}
-		scanlines[y] = []uint8(scanline)
+		debug.Println("Scanline:", scanline)
+		scanlines[y] = []rune(scanline)
 	}
 
-	// Sprite overlays
-	// ...
-	// ...
-	// TODO factor this into gopher bahaviour
-	gopherSprite, err := g.g.sprite(1)
-	if err != nil {
-		return "", errors.New("error rendering viewport")
-	}
-	for si, pixels := range gopherSprite {
-		fmt.Println(pixels)
-		for i, pixel := range pixels {
-			switch pixel {
-			case TN:
-				// Transparent, so just skip it
-				continue
-			default:
-				debug.Println("PIXEL IS ", pixel, " at ", i)
-				scanlines[si][i] = uint8(pixel)
-			}
-		}
-	}
+	// for _, sl := range scanlines {
+	// 	debug.Println(sl)
+	// }
 
-	// ...
-	// ...
-
-	output := frames[g.m.scale][0]
+	output := "╔════════════════════════╗\n"
 	for _, sl := range scanlines {
-		output += fmt.Sprintf("║ %s ║\n", sl)
+		output += fmt.Sprintf("║ %s ║\n", string(sl))
 	}
-	output += frames[g.m.scale][1] + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
+	output += "╚════════════════════════╝\n" + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
 
 	return output, nil
 }

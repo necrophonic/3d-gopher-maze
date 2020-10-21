@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
+	"github.com/necrophonic/gopher-maze/internal/game/element"
 	"github.com/pkg/errors"
 )
 
@@ -27,7 +28,7 @@ type (
 	Game struct {
 		p    *Player
 		m    *Maze
-		v    *view
+		v    []element.PixelMatrix
 		move moveVector
 		g    *gopher
 	}
@@ -58,7 +59,7 @@ func New() *Game {
 			grid:   grid{},
 			panels: nil,
 		},
-		v:    &view{},
+		v:    make([]element.PixelMatrix, numPanels),
 		move: moveVector{0, -1},
 		g:    &gopher{},
 	}
@@ -76,13 +77,13 @@ func Swatch() string {
 // Run performs the main game loop
 func (g *Game) Run() error {
 	// TODO split out scaler
-	g.m.scale = "1"
-	if s := os.Getenv("SCALE"); s != "" {
-		g.m.scale = s
-	}
-	if err := g.setUpScaledPanels(); err != nil {
-		return errors.WithMessage(err, "failed to set up scaling")
-	}
+	// g.m.scale = "1"
+	// if s := os.Getenv("SCALE"); s != "" {
+	// 	g.m.scale = s
+	// }
+	// if err := g.setUpScaledPanels(); err != nil {
+	// 	return errors.WithMessage(err, "failed to set up scaling")
+	// }
 
 	// TODO randomly (totally or from set of criteria) select a maze
 	// TODO would be nice to able to dynamically create one!
@@ -101,7 +102,12 @@ func (g *Game) Run() error {
 		if err := g.updateView(); err != nil {
 			return errors.WithMessage(err, "failed to update view")
 		}
-		fmt.Print(g.render())
+
+		viewport, err := g.render()
+		if err != nil {
+			return errors.WithMessage(err, "failed to render scene")
+		}
+		fmt.Print(viewport)
 
 		reader := bufio.NewReader(os.Stdin)
 
