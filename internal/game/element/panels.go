@@ -2,13 +2,6 @@ package element
 
 // PanelDefinition defines the possible parts that can display
 // for a panel depending on the current view
-// type PanelDefinition struct {
-// 	SideWall       *PixelMatrix
-// 	OpenWallNear   *PixelMatrix
-// 	OpenWallMiddle *PixelMatrix
-// 	OpenWallFar    *PixelMatrix
-// 	Empty          *PixelMatrix
-// }
 type PanelDefinition map[string]PixelMatrix
 
 // Panels contains definitions for screen view display panels.

@@ -45,20 +45,6 @@ func (e ErrBadDistance) Error() string {
 	return fmt.Sprintf("bad distance definition '%s'", e.d)
 }
 
-// // Constants defining screen pixels to display in the view window
-// const (
-// 	PW uint8 = iota // Wall
-// 	PO              // Open
-// 	PE              // Empty
-// 	PF              // Floor
-// 	PC              // Ceiling
-// 	GB              // Gopher body
-// )
-// const (
-// 	// TN represents transparent (used for overlays)
-// 	TN = 32
-// )
-
 type displayType uint8
 
 // Wall panel dispositions
@@ -69,10 +55,6 @@ const (
 	DOpenWallFar    = "openfar"
 	DEmpty          = "empty"
 )
-
-// type view struct {
-// 	window [numPanels]element.PixelMatrix
-// }
 
 func (g *Game) updateView() error {
 
@@ -134,83 +116,68 @@ func (g *Game) updateView() error {
 		my = 0
 	}
 
-	var isWall bool
-	var err error
-
-	// L, R and F
-	isWall, err = g.renderSpace(lp, rp, fp, 0, 6, "Near")
+	fp, isWall, err := g.renderSpace(lp, rp, fp, mx, my, Near)
 	if err != nil {
 		return err
 	}
 	if isWall {
+		debug.Println("Render break at wall")
 		return nil
-	}
-
-	// L1, R1 and F1
-	lp = point{lp.x + mx, lp.y + my}
-	rp = point{rp.x + mx, rp.y + my}
-	fp = point{fp.x + mx, fp.y + my}
-
-	debug.Printf("Checking L1 (%d,%d)[%c] R1 (%d,%d)[%c]", lp.x, lp.y, g.m.getSpace(lp).t, rp.x, rp.y, g.m.getSpace(rp).t)
-	isWall, err = g.renderSpace(lp, rp, fp, 1, 5, "Middle")
-	if err != nil {
-		return err
-	}
-	if isWall {
-		return nil
-	}
-
-	// L2, R2 and F2
-	lp = point{lp.x + mx, lp.y + my}
-	rp = point{rp.x + mx, rp.y + my}
-	fp = point{fp.x + mx, fp.y + my}
-
-	debug.Printf("Checking L2 (%d,%d)[%c] R2 (%d,%d)[%c]", lp.x, lp.y, g.m.getSpace(lp).t, rp.x, rp.y, g.m.getSpace(rp).t)
-	isWall, err = g.renderSpace(lp, rp, fp, 2, 4, "Far")
-	if err != nil {
-		return err
-	}
-	if isWall {
-		return nil
-	}
-
-	// Final step
-	fp = point{fp.x + mx, fp.y + my}
-	switch g.m.getSpace(fp).t {
-	case SpaceWall:
-		debug.Println("Space in (fp3) is (wall)")
-		g.v[3] = element.Panels[3]["OpenWallFar"]
-	case SpaceEmpty:
-		debug.Println("Space in (fp3) is (empty)")
-		g.v[3] = element.Panels[3]["Empty"]
-	default:
-		return ErrBadSpace{fp}
 	}
 
 	return nil
 }
 
-func (g *Game) renderSpace(lp, rp, fp point, lpanel, rpanel int, distance string) (isWall bool, err error) {
-	if err = g.renderLeftRight(lp, lpanel, distance); err != nil {
-		return false, err
+// Distances
+const (
+	Near   = 0
+	Middle = 1
+	Far    = 2
+)
+
+var distances = []string{"Near", "Middle", "Far"}
+var panelPairs = [][]int{{0, 6}, {1, 5}, {2, 4}}
+
+func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp point, isWall bool, err error) {
+
+	if distance == 3 {
+		// As far as we render, so break out
+		return fp, false, nil
 	}
-	if err = g.renderLeftRight(rp, rpanel, distance); err != nil {
-		return false, err
+	leftPanel := panelPairs[distance][0]
+	rightPanel := panelPairs[distance][1]
+
+	debug.Printf("Render L (%v), R (%v), F (%v) at %s\n", lp, rp, fp, distances[distance])
+
+	if err = g.renderLeftRight(lp, leftPanel, distances[distance]); err != nil {
+		return point{}, false, err
 	}
-	if isWall, err = g.renderFront(fp, "Far"); err != nil {
-		return false, err
+	if err = g.renderLeftRight(rp, rightPanel, distances[distance]); err != nil {
+		return point{}, false, err
 	}
-	return isWall, nil
+
+	if isWall, err = g.renderFront(fp, distances[distance]); err != nil {
+		return point{}, false, err
+	}
+	if !isWall && distance != 4 {
+		lp = point{lp.x + mx, lp.y + my}
+		rp = point{rp.x + mx, rp.y + my}
+		fp = point{fp.x + mx, fp.y + my}
+		distance++
+		return g.renderSpace(lp, rp, fp, mx, my, distance)
+	}
+	debug.Printf("Return FP %v", fp)
+	return fp, true, nil
 }
 
 func (g *Game) renderLeftRight(p point, panel int, distance string) error {
 	switch g.m.getSpace(p).t {
 	case SpaceWall:
 		g.v[panel] = element.Panels[panel]["SideWall"]
-		debug.Printf("Render point (%v) as wall", p)
+		debug.Printf("Render  side point (%v) as wall", p)
 	case SpaceEmpty:
 		g.v[panel] = element.Panels[panel]["OpenWall"+distance]
-		debug.Printf("Render point (%v) as open", p)
+		debug.Printf("Render  side (%v) as open", p)
 	default:
 		return ErrBadSpace{p}
 	}
@@ -220,6 +187,7 @@ func (g *Game) renderLeftRight(p point, panel int, distance string) error {
 func (g *Game) renderFront(fp point, distance string) (bool, error) {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
+		debug.Printf("Render front point (%v) as wall", fp)
 		switch distance {
 		case "Near":
 			g.v[1] = element.Panels[1]["OpenWall"+distance]
@@ -236,6 +204,8 @@ func (g *Game) renderFront(fp point, distance string) (bool, error) {
 		}
 		return true, nil
 	case SpaceEmpty:
+		debug.Printf("Render front point (%v) as empty", fp)
+		g.v[3] = element.Panels[3]["Empty"]
 		return false, nil
 	}
 	return false, ErrBadSpace{fp}
@@ -273,28 +243,31 @@ func (g *Game) render() (string, error) {
 
 		for c := 0; c < numPanels; c++ {
 			panel := g.v[c][y]
-			debug.Println("Panel", c)
-
 			for _, pixel := range panel {
 
-				// 	// debug.Printf("Overlay on panel %2d at %d, %d\n", c, x, y)
-				// 	// if overlay[y][x] != TN {
-				// 	// 	scanline += "XX"
-				// 	// 	continue
-				// 	// }
+				// TODO Account for overlay needing to define every
+				// half "pixel" rather than the doubling of the main
+				// view
+				// debug.Printf("Overlay on panel %2d at %d, %d\n", c, x, y)
+				// if overlay[y][x] != element.T {
+				// 	scanline[x] = 'X'
+				// 	scanline[x+1] = 'Y'
+				// 	x += 2
+				// 	continue
+				// }
 
 				// TODO Better handle doubling - interpolate into slices?
 				switch pixel {
 				case element.W:
-					debug.Println(" Pixel WALL")
-					scanline[x] = walls[(wallColourMod % 2)]
-					scanline[x+1] = walls[(wallColourMod % 2)]
-				case element.O:
-					debug.Println(" Pixel OPEN")
+					// debug.Println(" Pixel WALL")
 					scanline[x] = walls[((wallColourMod + 1) % 2)]
 					scanline[x+1] = walls[((wallColourMod + 1) % 2)]
+				case element.O:
+					// debug.Println(" Pixel OPEN")
+					scanline[x] = walls[(wallColourMod % 2)]
+					scanline[x+1] = walls[(wallColourMod % 2)]
 				default:
-					debug.Println(" Pixel TRANSPARENT")
+					// debug.Println(" Pixel TRANSPARENT")
 					scanline[x] = rune(' ')
 					scanline[x+1] = rune(' ')
 				}
@@ -302,13 +275,8 @@ func (g *Game) render() (string, error) {
 			}
 
 		}
-		debug.Println("Scanline:", scanline)
 		scanlines[y] = []rune(scanline)
 	}
-
-	// for _, sl := range scanlines {
-	// 	debug.Println(sl)
-	// }
 
 	output := "╔════════════════════════╗\n"
 	for _, sl := range scanlines {

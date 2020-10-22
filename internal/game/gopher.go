@@ -2,6 +2,8 @@ package game
 
 import (
 	"fmt"
+
+	"github.com/necrophonic/gopher-maze/internal/game/element"
 )
 
 // type gopherElements struct {
@@ -57,43 +59,51 @@ type gopher struct {
 // 	}
 // }
 
+// Shorthand
+const (
+	T = element.T
+	O = element.O
+	W = element.W
+)
+
 // TODO Probably needs to support scaling if that actually gets done!
-func (g *gopher) sprite(distance int) (pixelMatrix, error) {
+func (g *gopher) sprite(distance int) (element.PixelMatrix, error) {
 	if distance < 1 || distance > 3 {
 		return nil, fmt.Errorf("cannot render gopher at distance (%d)", distance)
 	}
 
-	// return map[int]pixelMatrix{
-	// 	// 1: {
-	// 	// 	[]pixel(`                      `),
-	// 	// 	[]pixel(`                      `),
-	// 	// 	[]pixel(`                      `),
-	// 	// 	[]pixel(`          XX          `),
-	// 	// 	[]pixel(`          ░░          `),
-	// 	// 	[]pixel(`          ░░          `),
-	// 	// 	[]pixel(`                      `),
-	// 	// 	[]pixel(`                      `),
-	// 	// 	[]pixel(`                      `),
-	// 	// },
-	// 	// 2: {
-	// 	// 	"                      ",
-	// 	// 	"                      ",
-	// 	// 	"        ░    ░        ",
-	// 	// 	"        ░░░░░░        ",
-	// 	// 	"         ░░░░         ",
-	// 	// 	"        ░░░░░░        ",
-	// 	// 	"         ░  ░",
-	// 	// },
-	// 	// 3: {
-	// 	// 	"                      ",
-	// 	// 	"      ░░      ░░      ",
-	// 	// 	"      ░░▓▓▓▓▓▓░░      ",
-	// 	// 	"      ░░▓ ▓▓ ▓░░      ",
-	// 	// 	"       ░░░░░░░░       ",
-	// 	// 	"      ░░▓▓░░▓▓░░      ",
-	// 	// 	"      ░░░░░░░░░░      ",
-	// 	// 	"        ░░  ░░",
-	// 	// },
-	// }[distance], nil
-	return nil, nil
+	return map[int]element.PixelMatrix{
+		1: {
+			{T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, W, W, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, W, W, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, W, W, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T},
+			{T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T},
+		},
+		// 2: {
+		// 	"                      ",
+		// 	"                      ",
+		// 	"        ░    ░        ",
+		// 	"        ░░░░░░        ",
+		// 	"         ░░░░         ",
+		// 	"        ░░░░░░        ",
+		// 	"         ░  ░",
+		// },
+		// 3: {
+		// 	"                      ",
+		// 	"      ░░      ░░      ",
+		// 	"      ░░▓▓▓▓▓▓░░      ",
+		// 	"      ░░▓ ▓▓ ▓░░      ",
+		// 	"       ░░░░░░░░       ",
+		// 	"      ░░▓▓░░▓▓░░      ",
+		// 	"      ░░░░░░░░░░      ",
+		// 	"        ░░  ░░",
+		// },
+	}[distance], nil
 }

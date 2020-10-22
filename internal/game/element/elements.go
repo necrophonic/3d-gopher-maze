@@ -5,6 +5,7 @@ const (
 	W uint8 = iota // wall
 	O              // open wall
 	T              // transparent
+	X              // default background for unrendered scenes
 )
 
 // PixelMatrix defines a 2 dimensional array of pixels. It
@@ -19,4 +20,13 @@ func (pm PixelMatrix) Height() int {
 // Width returns the row length of the pixel matrix
 func (pm PixelMatrix) Width() int {
 	return len(pm[0])
+}
+
+// Clear fills a PixelMatrix with valid, but empty pixels
+func (pm *PixelMatrix) Clear() {
+	for y := 0; y < len(*pm); y++ {
+		for x := 0; x < len((*pm)[y]); x++ {
+			(*pm)[y][x] = X
+		}
+	}
 }

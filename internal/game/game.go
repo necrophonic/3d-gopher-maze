@@ -12,6 +12,7 @@ import (
 )
 
 type (
+
 	// Player represents the current player state
 	Player struct {
 		x int8
@@ -28,7 +29,7 @@ type (
 	Game struct {
 		p    *Player
 		m    *Maze
-		v    []element.PixelMatrix
+		v    view
 		move moveVector
 		g    *gopher
 	}
@@ -62,6 +63,17 @@ func New() *Game {
 		v:    make([]element.PixelMatrix, numPanels),
 		move: moveVector{0, -1},
 		g:    &gopher{},
+	}
+}
+
+// View is a compiled slice of pixel matricies representing
+// panels to be displayed in the viewport.
+type view []element.PixelMatrix
+
+// Clear empties an existing view
+func (v view) Clear() {
+	for i := 0; i < len(v); i++ {
+		v[i].Clear()
 	}
 }
 
