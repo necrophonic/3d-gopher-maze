@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/necrophonic/gopher-maze/internal/debug"
 	"github.com/necrophonic/gopher-maze/internal/game"
 )
 
@@ -15,7 +15,7 @@ func run() {
 	g := game.New()
 
 	if err := g.Run(); err != nil {
-		debug.Println("Error running game:", err)
+		fmt.Println("Error running game:", err)
 		os.Exit(1)
 	}
 }

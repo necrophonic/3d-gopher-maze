@@ -158,6 +158,7 @@ var panelPairs = [][]int{{0, 6}, {1, 5}, {2, 4}}
 func (g *Game) checkSpaceForItem(p point, distance int) (err error) {
 	for _, item := range g.items {
 		if p.Is(item.GetPoint()) {
+			debug.Printf("Found item at point (%v)", p)
 			g.v.overlay, err = item.GetMatrix(distance)
 			if err != nil {
 				return err
@@ -171,6 +172,10 @@ func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp poi
 
 	if distance == 3 {
 		// As far as we render, so break out
+		// Check for items first
+		if err := g.checkSpaceForItem(fp, distance+1); err != nil {
+			return point{}, false, errors.WithMessage(err, "failed to check space for items")
+		}
 		return fp, false, nil
 	}
 	leftPanel := panelPairs[distance][0]
@@ -189,15 +194,17 @@ func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp poi
 		return point{}, false, err
 	}
 	if !isWall && distance != 4 {
+
+		// Check for items
+		if err := g.checkSpaceForItem(fp, distance+1); err != nil {
+			return point{}, false, errors.WithMessage(err, "failed to check space for items")
+		}
+
 		lp = point{lp.x + mx, lp.y + my}
 		rp = point{rp.x + mx, rp.y + my}
 		fp = point{fp.x + mx, fp.y + my}
-		distance++
 
-		// Check for items
-		if err := g.checkSpaceForItem(fp, distance); err != nil {
-			return point{}, false, errors.WithMessage(err, "failed to check space for items")
-		}
+		distance++
 
 		return g.renderSpace(lp, rp, fp, mx, my, distance)
 	}
@@ -247,7 +254,18 @@ func (g *Game) renderFront(fp point, distance string) (bool, error) {
 }
 
 var (
-	gopherBody = []rune{'█', '█'}
+	// TODO move these under gopher?
+
+	// X means transparent
+	gopherBody            = []rune{'█', '█'}
+	gopherBodyMid         = []rune{'▒', '▒'}
+	leftIndentGopherBody  = []rune{' ', '█'}
+	rightIndentGopherBody = []rune{'█', ' '}
+	leftEye               = []rune{'▒', '▀'}
+	rightEye              = []rune{'▀', '▒'}
+
+	leftOutline  = []rune{'X', ' '}
+	rightOutline = []rune{' ', 'X'}
 )
 
 func (g *Game) render() (string, error) {
@@ -261,13 +279,6 @@ func (g *Game) render() (string, error) {
 	if g.p.o == 'e' || g.p.o == 'w' {
 		wallColourMod = 1
 	}
-
-	// SPRITE
-	// overlay, err := g.gopher.sprite(1)
-	// if err != nil {
-	// 	return "", errors.New("error rendering gopther sprite to viewport")
-	// }
-	// SPRITE
 
 	for y := 0; y < viewHeight; y++ {
 		debug.Println("Render scan line:", y)
@@ -288,21 +299,6 @@ func (g *Game) render() (string, error) {
 				x += 2
 				xi++
 
-				// TODO Account for overlay needing to define every
-				// half "pixel" rather than the doubling of the main
-				// view
-				if g.v.overlay != nil {
-					debug.Printf("Overlay on panel %2d at %d, %d from overlay %d,%d\n", c, x, y, xi, y)
-					if g.v.overlay[y][xi] != element.T {
-						switch g.v.overlay[y][xi] {
-						case element.G:
-							scanline[x] = gopherBody[0]
-							scanline[x+1] = gopherBody[1]
-						}
-						continue
-					}
-				}
-
 				// TODO Better handle doubling - interpolate into slices?
 				switch pixel {
 				case element.W:
@@ -318,6 +314,34 @@ func (g *Game) render() (string, error) {
 					scanline[x] = rune(' ')
 					scanline[x+1] = rune(' ')
 				}
+
+				// TODO Account for overlay needing to define every
+				// half "pixel" rather than the doubling of the main
+				// view
+				if g.v.overlay != nil {
+					if g.v.overlay[y][xi] != element.T {
+						switch g.v.overlay[y][xi] {
+						case element.G:
+							scanline = addPixel(scanline, x, gopherBody)
+						case element.LI:
+							scanline = addPixel(scanline, x, leftIndentGopherBody)
+						case element.RI:
+							scanline = addPixel(scanline, x, rightIndentGopherBody)
+						case element.LO:
+							scanline = addPixel(scanline, x, leftOutline)
+						case element.RO:
+							scanline = addPixel(scanline, x, rightOutline)
+						case element.LE:
+							scanline = addPixel(scanline, x, leftEye)
+						case element.RE:
+							scanline = addPixel(scanline, x, rightEye)
+						case element.GM:
+							scanline = addPixel(scanline, x, gopherBodyMid)
+						}
+
+						continue
+					}
+				}
 			}
 
 		}
@@ -331,4 +355,14 @@ func (g *Game) render() (string, error) {
 	output += "╚════════════════════════╝\n" + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
 
 	return output, nil
+}
+
+func addPixel(sl []rune, x int, pixelDef []rune) []rune {
+	if pixelDef[0] != 'X' {
+		sl[x] = pixelDef[0]
+	}
+	if pixelDef[1] != 'X' {
+		sl[x+1] = pixelDef[1]
+	}
+	return sl
 }

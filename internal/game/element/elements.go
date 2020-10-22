@@ -2,11 +2,18 @@ package element
 
 // Shorthand constants defining screen pixels
 const (
-	W uint8 = iota // wall
-	O              // open wall
-	T              // transparent
-	X              // default background for unrendered scenes
-	G              // gopher body
+	W  uint8 = iota // wall
+	O               // open wall
+	T               // transparent
+	X               // default background for unrendered scenes
+	G               // gopher body
+	LE              // left eye
+	RE              // right eye
+	LI              // left indented gopher body
+	RI              // right indented gopher body
+	LO              // left outline
+	RO              // right outline
+	GM              // gopher body mid
 )
 
 // PixelMatrix defines a 2 dimensional array of pixels. It
