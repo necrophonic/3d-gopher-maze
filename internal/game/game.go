@@ -7,10 +7,12 @@ import (
 	"os/exec"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
+	"github.com/necrophonic/gopher-maze/internal/game/element"
 	"github.com/pkg/errors"
 )
 
 type (
+
 	// Player represents the current player state
 	Player struct {
 		x int8
@@ -25,10 +27,12 @@ type (
 
 	// Game represents the current game state
 	Game struct {
-		p    *Player
-		m    *Maze
-		v    *view
-		move moveVector
+		p      *Player
+		m      *Maze
+		v      *view
+		move   moveVector
+		gopher *gopher
+		items  []item
 	}
 )
 
@@ -37,6 +41,7 @@ const (
 	SpaceEmpty       spaceType = ' '
 	SpaceWall                  = 'X'
 	SpacePlayerStart           = 'p'
+	SpaceGopherStart           = 'g'
 )
 
 type (
@@ -46,6 +51,11 @@ type (
 		t spaceType
 	}
 )
+
+type item interface {
+	GetPoint() point
+	GetMatrix(distance int) (element.PixelMatrix, error)
+}
 
 // New creates a new game state
 func New() *Game {
@@ -57,8 +67,13 @@ func New() *Game {
 			grid:   grid{},
 			panels: nil,
 		},
-		v:    &view{},
-		move: moveVector{0, -1},
+		v: &view{
+			screen:  make([]element.PixelMatrix, numPanels),
+			overlay: element.PixelMatrix{},
+		},
+		move:   moveVector{0, -1},
+		gopher: &gopher{},
+		items:  []item{},
 	}
 }
 
@@ -74,13 +89,13 @@ func Swatch() string {
 // Run performs the main game loop
 func (g *Game) Run() error {
 	// TODO split out scaler
-	g.m.scale = "1"
-	if s := os.Getenv("SCALE"); s != "" {
-		g.m.scale = s
-	}
-	if err := g.setUpScaledPanels(); err != nil {
-		return errors.WithMessage(err, "failed to set up scaling")
-	}
+	// g.m.scale = "1"
+	// if s := os.Getenv("SCALE"); s != "" {
+	// 	g.m.scale = s
+	// }
+	// if err := g.setUpScaledPanels(); err != nil {
+	// 	return errors.WithMessage(err, "failed to set up scaling")
+	// }
 
 	// TODO randomly (totally or from set of criteria) select a maze
 	// TODO would be nice to able to dynamically create one!
@@ -99,7 +114,12 @@ func (g *Game) Run() error {
 		if err := g.updateView(); err != nil {
 			return errors.WithMessage(err, "failed to update view")
 		}
-		fmt.Print(g.render())
+
+		viewport, err := g.render()
+		if err != nil {
+			return errors.WithMessage(err, "failed to render scene")
+		}
+		fmt.Print(viewport)
 
 		reader := bufio.NewReader(os.Stdin)
 
@@ -131,6 +151,9 @@ func (g *Game) Run() error {
 			debug.Println("Exiting game")
 			fmt.Println("Goodbye!")
 			return nil
+		default:
+			// TODO Display arbitrary message
+			// msg = "Sorry, I didn't understand that one!"
 		}
 		debug.Printf("Player is now at (%d,%d). Facing (%c)\n", g.p.x, g.p.y, g.p.o)
 	}
