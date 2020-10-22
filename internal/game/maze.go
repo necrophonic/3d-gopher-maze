@@ -2,6 +2,8 @@ package game
 
 import (
 	"errors"
+	"math/rand"
+	"time"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
 	"github.com/necrophonic/gopher-maze/internal/game/element"
@@ -32,6 +34,9 @@ func (g *Game) importMaze(m mazeDefinition) error {
 	playerFound := false
 	gopherFound := false
 
+	playerStarts := make([]point, 0, 1)
+	gopherStarts := make([]point, 0, 1)
+
 	newMaze := make([][]space, height)
 	for y := range m {
 		newMaze[y] = make([]space, width)
@@ -40,14 +45,16 @@ func (g *Game) importMaze(m mazeDefinition) error {
 			// mark that point, and set the space as "empty"
 			switch sp {
 			case SpacePlayerStart:
-				g.p.x = int8(x)
-				g.p.y = int8(y)
+				// g.p.x = int8(x)
+				// g.p.y = int8(y)
+				playerStarts = append(playerStarts, newPointInt(x, y))
 				sp = uint8(SpaceEmpty)
 				playerFound = true
 				debug.Printf("Found player start point at (%d,%d)", x, y)
 			case SpaceGopherStart:
 				g.gopher.p.x = int8(x)
 				g.gopher.p.y = int8(y)
+				gopherStarts = append(gopherStarts, newPointInt(x, y))
 				sp = uint8(SpaceEmpty)
 				gopherFound = true
 				g.items = append(g.items, g.gopher)
@@ -65,6 +72,17 @@ func (g *Game) importMaze(m mazeDefinition) error {
 	if !gopherFound {
 		return errors.New("bad maze definition: no gopher start point")
 	}
+
+	rand.Seed(time.Now().Unix())
+
+	// Choose random player and gopher starts
+	ps := playerStarts[rand.Intn(len(playerStarts))]
+	g.p.x = ps.x
+	g.p.y = ps.y
+	debug.Printf("Starting random player start at (%v)", ps)
+
+	g.gopher.p = gopherStarts[rand.Intn(len(gopherStarts))]
+	debug.Printf("Starting random gopher start at (%v)", g.gopher.p)
 
 	g.m.grid = newMaze
 	return nil
@@ -108,9 +126,9 @@ var mazes = []mazeDefinition{
 		{'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'},
 		{'X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'},
 		{'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X', ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', ' ', 'X', 'X', 'X'},
-		{'X', ' ', 'X', ' ', ' ', ' ', 'X', ' ', 'X', ' ', 'X', ' ', 'X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'},
+		{'X', ' ', 'X', 'p', ' ', ' ', 'X', ' ', 'X', 'g', 'X', ' ', 'X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'},
 		{'X', ' ', 'X', 'X', 'X', ' ', 'X', ' ', 'X', ' ', 'X', ' ', 'X', ' ', 'X', 'X', 'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', 'X'},
-		{'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X', ' ', 'X', ' ', 'X', ' ', ' ', ' ', 'X', ' ', ' ', 'X', ' ', ' ', 'X'},
+		{'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X', ' ', 'X', ' ', 'X', ' ', ' ', ' ', 'X', ' ', ' ', 'X', 'g', ' ', 'X'},
 		{'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X'},
 		{'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X', 'g', 'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'},
 		{'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ', 'X', ' ', 'X', ' ', 'X', 'X', 'X', ' ', 'X', 'X', 'X', 'X', 'X'},
@@ -118,17 +136,17 @@ var mazes = []mazeDefinition{
 		{'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X', ' ', 'X', ' ', 'X', ' ', 'X', 'X', 'X', ' ', 'X', 'X', 'X', 'X', 'X', ' ', 'X'},
 		{'X', ' ', 'X', ' ', ' ', ' ', 'X', ' ', 'X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X'},
 		{'X', ' ', 'X', ' ', 'X', ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', 'p', 'X', 'X', 'X', ' ', 'X', ' ', 'X', 'X', 'X', ' ', 'X'},
-		{'X', ' ', ' ', ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X', ' ', 'X', ' ', 'X'},
+		{'X', ' ', ' ', 'g', 'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X', ' ', 'X', ' ', 'X'},
 		{'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ', 'X'},
 		{'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X'},
 		{'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X'},
 		{'X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X'},
 		{'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X', ' ', 'X', 'X', 'X', ' ', 'X'},
-		{'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X', ' ', 'X', ' ', ' ', ' ', 'X'},
+		{'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X', ' ', 'X', ' ', ' ', 'p', 'X'},
 		{'X', ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', ' ', 'X', 'X', 'X', ' ', 'X', 'X', 'X'},
 		{'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X', ' ', 'X', ' ', 'X'},
 		{'X', ' ', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ', 'X', ' ', 'X', 'X', 'X', 'X', 'X', 'X', 'X', ' ', 'X', ' ', 'X', ' ', 'X'},
-		{'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X'},
+		{'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', 'p', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X'},
 		{'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'},
 	},
 }
