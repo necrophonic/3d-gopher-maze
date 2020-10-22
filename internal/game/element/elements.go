@@ -6,6 +6,7 @@ const (
 	O              // open wall
 	T              // transparent
 	X              // default background for unrendered scenes
+	G              // gopher body
 )
 
 // PixelMatrix defines a 2 dimensional array of pixels. It

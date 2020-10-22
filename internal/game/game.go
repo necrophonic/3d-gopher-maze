@@ -27,11 +27,12 @@ type (
 
 	// Game represents the current game state
 	Game struct {
-		p    *Player
-		m    *Maze
-		v    view
-		move moveVector
-		g    *gopher
+		p      *Player
+		m      *Maze
+		v      *view
+		move   moveVector
+		gopher *gopher
+		items  []item
 	}
 )
 
@@ -40,6 +41,7 @@ const (
 	SpaceEmpty       spaceType = ' '
 	SpaceWall                  = 'X'
 	SpacePlayerStart           = 'p'
+	SpaceGopherStart           = 'g'
 )
 
 type (
@@ -49,6 +51,11 @@ type (
 		t spaceType
 	}
 )
+
+type item interface {
+	GetPoint() point
+	GetMatrix(distance int) (element.PixelMatrix, error)
+}
 
 // New creates a new game state
 func New() *Game {
@@ -60,20 +67,13 @@ func New() *Game {
 			grid:   grid{},
 			panels: nil,
 		},
-		v:    make([]element.PixelMatrix, numPanels),
-		move: moveVector{0, -1},
-		g:    &gopher{},
-	}
-}
-
-// View is a compiled slice of pixel matricies representing
-// panels to be displayed in the viewport.
-type view []element.PixelMatrix
-
-// Clear empties an existing view
-func (v view) Clear() {
-	for i := 0; i < len(v); i++ {
-		v[i].Clear()
+		v: &view{
+			screen:  make([]element.PixelMatrix, numPanels),
+			overlay: element.PixelMatrix{},
+		},
+		move:   moveVector{0, -1},
+		gopher: &gopher{},
+		items:  []item{},
 	}
 }
 
@@ -151,6 +151,9 @@ func (g *Game) Run() error {
 			debug.Println("Exiting game")
 			fmt.Println("Goodbye!")
 			return nil
+		default:
+			// TODO Display arbitrary message
+			// msg = "Sorry, I didn't understand that one!"
 		}
 		debug.Printf("Player is now at (%d,%d). Facing (%c)\n", g.p.x, g.p.y, g.p.o)
 	}

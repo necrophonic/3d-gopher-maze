@@ -6,25 +6,40 @@ import (
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
 	"github.com/necrophonic/gopher-maze/internal/game/element"
-)
-
-type (
-	// pixel       rune
-	pixelMatrix [][]rune
+	"github.com/pkg/errors"
 )
 
 const numPanels = 7
 const viewHeight = 9
 const viewWidth = 11
 
-type windowSlice [][]rune
 type point struct {
 	x int8
 	y int8
 }
 
+// Is returns whether the given point is
+// the same location as this point
+func (p point) Is(p2 point) bool {
+	return p.x == p2.x && p.y == p2.y
+}
+
 // TODO refactor swtches
 var walls = [2]rune{'▒', '░'}
+
+// View is a compiled slice of pixel matricies representing
+// panels to be displayed in the viewport.
+type view struct {
+	screen  []element.PixelMatrix
+	overlay element.PixelMatrix
+}
+
+// Clear empties an existing view
+func (v view) Clear() {
+	for i := 0; i < len(v.screen); i++ {
+		v.screen[i].Clear()
+	}
+}
 
 // ErrBadSpace is returned if the space definition in a
 // point location is unexpected
@@ -57,6 +72,8 @@ const (
 )
 
 func (g *Game) updateView() error {
+
+	g.v.overlay = nil
 
 	// The window is comprised of 7 vertical slices
 	// The outer two each side are two columns;
@@ -138,6 +155,18 @@ const (
 var distances = []string{"Near", "Middle", "Far"}
 var panelPairs = [][]int{{0, 6}, {1, 5}, {2, 4}}
 
+func (g *Game) checkSpaceForItem(p point, distance int) (err error) {
+	for _, item := range g.items {
+		if p.Is(item.GetPoint()) {
+			g.v.overlay, err = item.GetMatrix(distance)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp point, isWall bool, err error) {
 
 	if distance == 3 {
@@ -164,6 +193,12 @@ func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp poi
 		rp = point{rp.x + mx, rp.y + my}
 		fp = point{fp.x + mx, fp.y + my}
 		distance++
+
+		// Check for items
+		if err := g.checkSpaceForItem(fp, distance); err != nil {
+			return point{}, false, errors.WithMessage(err, "failed to check space for items")
+		}
+
 		return g.renderSpace(lp, rp, fp, mx, my, distance)
 	}
 	debug.Printf("Return FP %v", fp)
@@ -173,10 +208,10 @@ func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp poi
 func (g *Game) renderLeftRight(p point, panel int, distance string) error {
 	switch g.m.getSpace(p).t {
 	case SpaceWall:
-		g.v[panel] = element.Panels[panel]["SideWall"]
+		g.v.screen[panel] = element.Panels[panel]["SideWall"]
 		debug.Printf("Render  side point (%v) as wall", p)
 	case SpaceEmpty:
-		g.v[panel] = element.Panels[panel]["OpenWall"+distance]
+		g.v.screen[panel] = element.Panels[panel]["OpenWall"+distance]
 		debug.Printf("Render  side (%v) as open", p)
 	default:
 		return ErrBadSpace{p}
@@ -190,32 +225,37 @@ func (g *Game) renderFront(fp point, distance string) (bool, error) {
 		debug.Printf("Render front point (%v) as wall", fp)
 		switch distance {
 		case "Near":
-			g.v[1] = element.Panels[1]["OpenWall"+distance]
-			g.v[5] = element.Panels[5]["OpenWall"+distance]
+			g.v.screen[1] = element.Panels[1]["OpenWall"+distance]
+			g.v.screen[5] = element.Panels[5]["OpenWall"+distance]
 			fallthrough
 		case "Middle":
-			g.v[2] = element.Panels[2]["OpenWall"+distance]
-			g.v[4] = element.Panels[4]["OpenWall"+distance]
+			g.v.screen[2] = element.Panels[2]["OpenWall"+distance]
+			g.v.screen[4] = element.Panels[4]["OpenWall"+distance]
 			fallthrough
 		case "Far":
-			g.v[3] = element.Panels[3]["OpenWall"+distance]
+			g.v.screen[3] = element.Panels[3]["OpenWall"+distance]
 		default:
 			return false, ErrBadDistance{distance}
 		}
 		return true, nil
 	case SpaceEmpty:
 		debug.Printf("Render front point (%v) as empty", fp)
-		g.v[3] = element.Panels[3]["Empty"]
+		g.v.screen[3] = element.Panels[3]["Empty"]
 		return false, nil
 	}
 	return false, ErrBadSpace{fp}
 }
 
+var (
+	gopherBody = []rune{'█', '█'}
+)
+
 func (g *Game) render() (string, error) {
+	// render() will render a compiled view to a displayable string
 
 	// Construct the viewport first before we overlay and sprites.
 	// This comprises a set of virtual scanlines.
-	scanlines := make(pixelMatrix, viewHeight)
+	scanlines := make([][]rune, viewHeight)
 
 	wallColourMod := 0
 	if g.p.o == 'e' || g.p.o == 'w' {
@@ -223,7 +263,7 @@ func (g *Game) render() (string, error) {
 	}
 
 	// SPRITE
-	// overlay, err := g.g.sprite(1)
+	// overlay, err := g.gopher.sprite(1)
 	// if err != nil {
 	// 	return "", errors.New("error rendering gopther sprite to viewport")
 	// }
@@ -239,22 +279,29 @@ func (g *Game) render() (string, error) {
 		// Mark the absolute x position as we read through the panels so
 		// we can replace with any overlay in the correct positions as and
 		// when appropriate.
-		x := 0
+		x := -2
+		xi := -1
 
 		for c := 0; c < numPanels; c++ {
-			panel := g.v[c][y]
+			panel := g.v.screen[c][y]
 			for _, pixel := range panel {
+				x += 2
+				xi++
 
 				// TODO Account for overlay needing to define every
 				// half "pixel" rather than the doubling of the main
 				// view
-				// debug.Printf("Overlay on panel %2d at %d, %d\n", c, x, y)
-				// if overlay[y][x] != element.T {
-				// 	scanline[x] = 'X'
-				// 	scanline[x+1] = 'Y'
-				// 	x += 2
-				// 	continue
-				// }
+				if g.v.overlay != nil {
+					debug.Printf("Overlay on panel %2d at %d, %d from overlay %d,%d\n", c, x, y, xi, y)
+					if g.v.overlay[y][xi] != element.T {
+						switch g.v.overlay[y][xi] {
+						case element.G:
+							scanline[x] = gopherBody[0]
+							scanline[x+1] = gopherBody[1]
+						}
+						continue
+					}
+				}
 
 				// TODO Better handle doubling - interpolate into slices?
 				switch pixel {
@@ -271,11 +318,10 @@ func (g *Game) render() (string, error) {
 					scanline[x] = rune(' ')
 					scanline[x+1] = rune(' ')
 				}
-				x += 2
 			}
 
 		}
-		scanlines[y] = []rune(scanline)
+		scanlines[y] = scanline
 	}
 
 	output := "╔════════════════════════╗\n"
