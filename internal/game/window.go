@@ -24,6 +24,10 @@ func (p point) Is(p2 point) bool {
 	return p.x == p2.x && p.y == p2.y
 }
 
+func newPointInt(x, y int) point {
+	return point{int8(x), int8(y)}
+}
+
 // TODO refactor swtches
 var walls = [2]rune{'▒', '░'}
 
