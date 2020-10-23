@@ -144,7 +144,7 @@ func (g *Game) updateView() error {
 		my = 0
 	}
 
-	fp, isWall, err := g.renderSpace(lp, rp, fp, mx, my, Near)
+	_, isWall, err := g.renderSpace(lp, rp, fp, mx, my, Near)
 	if err != nil {
 		return err
 	}
