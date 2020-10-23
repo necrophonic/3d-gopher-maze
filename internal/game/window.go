@@ -108,9 +108,9 @@ func (g *Game) updateView() error {
 	var fp point
 
 	var mx, my int8
-	p := g.p
+	p := g.player.p
 
-	switch p.o {
+	switch g.player.o {
 	case 'n':
 		lp = point{p.x - 1, p.y}
 		rp = point{p.x + 1, p.y}
@@ -280,7 +280,7 @@ func (g *Game) render() (string, error) {
 	scanlines := make([][]rune, viewHeight)
 
 	wallColourMod := 0
-	if g.p.o == 'e' || g.p.o == 'w' {
+	if g.player.o == 'e' || g.player.o == 'w' {
 		wallColourMod = 1
 	}
 
@@ -356,7 +356,7 @@ func (g *Game) render() (string, error) {
 	for _, sl := range scanlines {
 		output += fmt.Sprintf("║ %s ║\n", string(sl))
 	}
-	output += "╚════════════════════════╝\n" + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.p.o})) + "\nWhich way?: "
+	output += "╚════════════════════════╝\n" + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.player.o})) + "\nWhich way?: "
 
 	return output, nil
 }

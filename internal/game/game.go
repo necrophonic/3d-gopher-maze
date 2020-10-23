@@ -12,14 +12,6 @@ import (
 )
 
 type (
-
-	// Player represents the current player state
-	Player struct {
-		x int8
-		y int8
-		o byte
-	}
-
 	moveVector struct {
 		x int8
 		y int8
@@ -27,7 +19,7 @@ type (
 
 	// Game represents the current game state
 	Game struct {
-		p      *Player
+		player *Player
 		m      *Maze
 		v      *view
 		move   moveVector
@@ -60,7 +52,7 @@ type item interface {
 // New creates a new game state
 func New() *Game {
 	return &Game{
-		p: &Player{
+		player: &Player{
 			o: 'n',
 		},
 		m: &Maze{
@@ -155,6 +147,6 @@ func (g *Game) Run() error {
 			// TODO Display arbitrary message
 			// msg = "Sorry, I didn't understand that one!"
 		}
-		debug.Printf("Player is now at (%d,%d). Facing (%c)\n", g.p.x, g.p.y, g.p.o)
+		debug.Printf("Player is now at (%d,%d). Facing (%c)\n", g.player.p.x, g.player.p.y, g.player.o)
 	}
 }

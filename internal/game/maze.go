@@ -45,8 +45,8 @@ func (g *Game) importMaze(m mazeDefinition) error {
 			// mark that point, and set the space as "empty"
 			switch sp {
 			case SpacePlayerStart:
-				// g.p.x = int8(x)
-				// g.p.y = int8(y)
+				// g.player.x = int8(x)
+				// g.player.y = int8(y)
 				playerStarts = append(playerStarts, newPointInt(x, y))
 				sp = uint8(SpaceEmpty)
 				playerFound = true
@@ -76,10 +76,8 @@ func (g *Game) importMaze(m mazeDefinition) error {
 	rand.Seed(time.Now().Unix())
 
 	// Choose random player and gopher starts
-	ps := playerStarts[rand.Intn(len(playerStarts))]
-	g.p.x = ps.x
-	g.p.y = ps.y
-	debug.Printf("Starting random player start at (%v)", ps)
+	g.player.p = playerStarts[rand.Intn(len(playerStarts))]
+	debug.Printf("Starting random player start at (%v)", g.player.p)
 
 	g.gopher.p = gopherStarts[rand.Intn(len(gopherStarts))]
 	debug.Printf("Starting random gopher start at (%v)", g.gopher.p)
