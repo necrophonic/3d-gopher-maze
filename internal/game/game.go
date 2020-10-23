@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
 	"github.com/necrophonic/gopher-maze/internal/game/element"
+	"github.com/necrophonic/gopher-maze/internal/game/terminal"
 	"github.com/pkg/errors"
 )
 
@@ -99,16 +99,13 @@ func (g *Game) Run() error {
 
 	// TODO randomly (totally or from set of criteria) select a maze
 	// TODO would be nice to able to dynamically create one!
-	if err := g.importMaze(mazes[0]); err != nil {
+	if err := g.importMaze(mazes[2]); err != nil {
 		return errors.WithMessage(err, "failed to import maze")
 	}
 
 	for {
 		if !debug.Debug {
-			// TODO compile for windows
-			cmd := exec.Command("clear")
-			cmd.Stdout = os.Stdout
-			cmd.Run()
+			terminal.Clear()
 		}
 
 		if g.state == sWin {
