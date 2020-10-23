@@ -40,7 +40,7 @@ There are a few environment vars supported for changing behaviours:
 | Env var | Default | Description                                                                                        |
 | ------- | ------- | -------------------------------------------------------------------------------------------------- |
 | DEBUG   | `false` | Switches on developer debugging. This will stop the screen auto-refreshing and move to slide mode. |
-| SCALE   | `1`     | Change the size of the view window (_not fully supported yet!_)                                    |
+
 
 ### Moving
 

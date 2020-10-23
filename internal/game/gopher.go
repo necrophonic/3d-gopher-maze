@@ -8,10 +8,10 @@ import (
 )
 
 type gopher struct {
-	p point
+	p Point
 }
 
-func (g *gopher) GetPoint() point {
+func (g *gopher) GetPoint() Point {
 	return g.p
 }
 

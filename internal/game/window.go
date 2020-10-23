@@ -13,19 +13,26 @@ const numPanels = 7
 const viewHeight = 9
 const viewWidth = 11
 
-type point struct {
-	x int8
-	y int8
+// Point represents an x,y co-ordinate point on the game grid.
+type Point struct {
+	X int8
+	Y int8
 }
 
 // Is returns whether the given point is
 // the same location as this point
-func (p point) Is(p2 point) bool {
-	return p.x == p2.x && p.y == p2.y
+func (p Point) Is(p2 Point) bool {
+	return p.X == p2.X && p.Y == p2.Y
 }
 
-func newPointInt(x, y int) point {
-	return point{int8(x), int8(y)}
+// String returns a stringified representation of the point
+func (p Point) String() string {
+	return fmt.Sprintf("%d, %d", p.X, p.Y)
+}
+
+// NewPointInt creates a new point from a set of integer co-ords
+func NewPointInt(x, y int) Point {
+	return Point{int8(x), int8(y)}
 }
 
 // TODO refactor swtches
@@ -48,11 +55,11 @@ func (v view) Clear() {
 // ErrBadSpace is returned if the space definition in a
 // point location is unexpected
 type ErrBadSpace struct {
-	p point
+	p Point
 }
 
 func (e ErrBadSpace) Error() string {
-	return fmt.Sprintf("bad space definition at (%d,%d)", e.p.x, e.p.y)
+	return fmt.Sprintf("bad space definition at (%v)", e.p)
 }
 
 // ErrBadDistance is returned if a distance used is not "Near", "Middle" or "Far"
@@ -103,36 +110,36 @@ func (g *Game) updateView() error {
 
 	// Determine the points to our left and right and then we can
 	// position from there into the grid.
-	var lp point
-	var rp point
-	var fp point
+	var lp Point
+	var rp Point
+	var fp Point
 
 	var mx, my int8
 	p := g.player.p
 
 	switch g.player.o {
 	case 'n':
-		lp = point{p.x - 1, p.y}
-		rp = point{p.x + 1, p.y}
-		fp = point{p.x, p.y - 1}
+		lp = Point{p.X - 1, p.Y}
+		rp = Point{p.X + 1, p.Y}
+		fp = Point{p.X, p.Y - 1}
 		mx = 0
 		my = -1
 	case 's':
-		lp = point{p.x + 1, p.y}
-		rp = point{p.x - 1, p.y}
-		fp = point{p.x, p.y + 1}
+		lp = Point{p.X + 1, p.Y}
+		rp = Point{p.X - 1, p.Y}
+		fp = Point{p.X, p.Y + 1}
 		mx = 0
 		my = 1
 	case 'e':
-		lp = point{p.x, p.y - 1}
-		rp = point{p.x, p.y + 1}
-		fp = point{p.x + 1, p.y}
+		lp = Point{p.X, p.Y - 1}
+		rp = Point{p.X, p.Y + 1}
+		fp = Point{p.X + 1, p.Y}
 		mx = 1
 		my = 0
 	case 'w':
-		lp = point{p.x, p.y + 1}
-		rp = point{p.x, p.y - 1}
-		fp = point{p.x - 1, p.y}
+		lp = Point{p.X, p.Y + 1}
+		rp = Point{p.X, p.Y - 1}
+		fp = Point{p.X - 1, p.Y}
 		mx = -1
 		my = 0
 	}
@@ -159,7 +166,7 @@ const (
 var distances = []string{"Near", "Middle", "Far"}
 var panelPairs = [][]int{{0, 6}, {1, 5}, {2, 4}}
 
-func (g *Game) checkSpaceForItem(p point, distance int) (err error) {
+func (g *Game) checkSpaceForItem(p Point, distance int) (err error) {
 	for _, item := range g.items {
 		if p.Is(item.GetPoint()) {
 			debug.Printf("Found item at point (%v)", p)
@@ -172,13 +179,13 @@ func (g *Game) checkSpaceForItem(p point, distance int) (err error) {
 	return nil
 }
 
-func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp point, isWall bool, err error) {
+func (g *Game) renderSpace(lp, rp, fp Point, mx, my int8, distance int) (nfp Point, isWall bool, err error) {
 
 	if distance == 3 {
 		// As far as we render, so break out
 		// Check for items first
 		if err := g.checkSpaceForItem(fp, distance+1); err != nil {
-			return point{}, false, errors.WithMessage(err, "failed to check space for items")
+			return Point{}, false, errors.WithMessage(err, "failed to check space for items")
 		}
 		return fp, false, nil
 	}
@@ -188,25 +195,25 @@ func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp poi
 	debug.Printf("Render L (%v), R (%v), F (%v) at %s\n", lp, rp, fp, distances[distance])
 
 	if err = g.renderLeftRight(lp, leftPanel, distances[distance]); err != nil {
-		return point{}, false, err
+		return Point{}, false, err
 	}
 	if err = g.renderLeftRight(rp, rightPanel, distances[distance]); err != nil {
-		return point{}, false, err
+		return Point{}, false, err
 	}
 
 	if isWall, err = g.renderFront(fp, distances[distance]); err != nil {
-		return point{}, false, err
+		return Point{}, false, err
 	}
 	if !isWall && distance != 4 {
 
 		// Check for items
 		if err := g.checkSpaceForItem(fp, distance+1); err != nil {
-			return point{}, false, errors.WithMessage(err, "failed to check space for items")
+			return Point{}, false, errors.WithMessage(err, "failed to check space for items")
 		}
 
-		lp = point{lp.x + mx, lp.y + my}
-		rp = point{rp.x + mx, rp.y + my}
-		fp = point{fp.x + mx, fp.y + my}
+		lp = Point{lp.X + mx, lp.Y + my}
+		rp = Point{rp.X + mx, rp.Y + my}
+		fp = Point{fp.X + mx, fp.Y + my}
 
 		distance++
 
@@ -216,7 +223,7 @@ func (g *Game) renderSpace(lp, rp, fp point, mx, my int8, distance int) (nfp poi
 	return fp, true, nil
 }
 
-func (g *Game) renderLeftRight(p point, panel int, distance string) error {
+func (g *Game) renderLeftRight(p Point, panel int, distance string) error {
 	switch g.m.getSpace(p).t {
 	case SpaceWall:
 		g.v.screen[panel] = element.Panels[panel]["SideWall"]
@@ -230,7 +237,7 @@ func (g *Game) renderLeftRight(p point, panel int, distance string) error {
 	return nil
 }
 
-func (g *Game) renderFront(fp point, distance string) (bool, error) {
+func (g *Game) renderFront(fp Point, distance string) (bool, error) {
 	switch g.m.getSpace(fp).t {
 	case SpaceWall:
 		debug.Printf("Render front point (%v) as wall", fp)
@@ -356,8 +363,16 @@ func (g *Game) render() (string, error) {
 	for _, sl := range scanlines {
 		output += fmt.Sprintf("║ %s ║\n", string(sl))
 	}
-	output += "╚════════════════════════╝\n" + fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.player.o})) + "\nWhich way?: "
+	output += "╚════════════════════════╝\n"
 
+	output += fmt.Sprintf("Facing: %s\n", bytes.ToUpper([]byte{g.player.o}))
+	if g.Msg != "" {
+		output += g.Msg + "\n"
+		g.Msg = ""
+	}
+	if g.state == sRunning {
+		output += "\nWhich way?: "
+	}
 	return output, nil
 }
 

@@ -25,6 +25,9 @@ type (
 		move   moveVector
 		gopher *gopher
 		items  []item
+		state  State
+
+		Msg string
 	}
 )
 
@@ -36,6 +39,16 @@ const (
 	SpaceGopherStart           = 'g'
 )
 
+// State represents the current game state
+type State uint8
+
+// Game states
+const (
+	sWin State = iota
+	sRunning
+	sReady
+)
+
 type (
 	spaceType uint8
 
@@ -45,7 +58,7 @@ type (
 )
 
 type item interface {
-	GetPoint() point
+	GetPoint() Point
 	GetMatrix(distance int) (element.PixelMatrix, error)
 }
 
@@ -66,6 +79,8 @@ func New() *Game {
 		move:   moveVector{0, -1},
 		gopher: &gopher{},
 		items:  []item{},
+		state:  sReady,
+		Msg:    "",
 	}
 }
 
@@ -80,18 +95,11 @@ func Swatch() string {
 
 // Run performs the main game loop
 func (g *Game) Run() error {
-	// TODO split out scaler
-	// g.m.scale = "1"
-	// if s := os.Getenv("SCALE"); s != "" {
-	// 	g.m.scale = s
-	// }
-	// if err := g.setUpScaledPanels(); err != nil {
-	// 	return errors.WithMessage(err, "failed to set up scaling")
-	// }
+	g.state = sRunning
 
 	// TODO randomly (totally or from set of criteria) select a maze
 	// TODO would be nice to able to dynamically create one!
-	if err := g.importMaze(mazes[2]); err != nil {
+	if err := g.importMaze(mazes[0]); err != nil {
 		return errors.WithMessage(err, "failed to import maze")
 	}
 
@@ -103,6 +111,10 @@ func (g *Game) Run() error {
 			cmd.Run()
 		}
 
+		if g.state == sWin {
+			g.Msg = "You won!"
+		}
+
 		if err := g.updateView(); err != nil {
 			return errors.WithMessage(err, "failed to update view")
 		}
@@ -112,6 +124,11 @@ func (g *Game) Run() error {
 			return errors.WithMessage(err, "failed to render scene")
 		}
 		fmt.Print(viewport)
+
+		if g.state == sWin {
+			debug.Println("Game was won")
+			return nil
+		}
 
 		reader := bufio.NewReader(os.Stdin)
 
@@ -144,9 +161,8 @@ func (g *Game) Run() error {
 			fmt.Println("Goodbye!")
 			return nil
 		default:
-			// TODO Display arbitrary message
-			// msg = "Sorry, I didn't understand that one!"
+			g.Msg = "Sorry, I didn't understand that one!"
 		}
-		debug.Printf("Player is now at (%d,%d). Facing (%c)\n", g.player.p.x, g.player.p.y, g.player.o)
+		debug.Printf("Player is now at (%v). Facing (%c)\n", g.player.p, g.player.o)
 	}
 }
