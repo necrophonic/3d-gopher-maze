@@ -1,5 +1,7 @@
 # 3D Gopher Maze
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/necrophonic/3d-gopher-maze)](https://goreportcard.com/report/github.com/necrophonic/3d-gopher-maze)
+
 Find the gopher, escape the maze!
 
 Inspired by 80s games like 3d monster maze and phantom slayer, this is a little
