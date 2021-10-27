@@ -71,8 +71,6 @@ func (e ErrBadDistance) Error() string {
 	return fmt.Sprintf("bad distance definition '%s'", e.d)
 }
 
-type displayType uint8
-
 // Wall panel dispositions
 const (
 	DSideWall       = "sidewall"

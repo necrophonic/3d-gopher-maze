@@ -104,8 +104,5 @@ func (g *Game) rotateLeft() {
 func (g *Game) isMoveToWall(mx, my int8) bool {
 	px := g.player.p.X + mx
 	py := g.player.p.Y + my
-	if g.m.getSpace(Point{px, py}).t == SpaceWall {
-		return true
-	}
-	return false
+	return g.m.getSpace(Point{px, py}).t == SpaceWall
 }
