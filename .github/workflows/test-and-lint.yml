@@ -7,6 +7,10 @@ jobs:
     name: Run staticcheck
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
       - name: staticcheck
         run: |
           # add executables installed with go get to PATH
