@@ -15,9 +15,6 @@ type grid [][]space
 type Maze struct {
 	grid   grid
 	panels map[int]map[string]element.PixelMatrix
-	scale  string
-	height int
-	width  int
 }
 
 func (m *Maze) getSpace(p Point) space {
@@ -46,13 +43,13 @@ func (g *Game) importMaze(m mazeDefinition) error {
 			switch sp {
 			case SpacePlayerStart:
 				playerStarts = append(playerStarts, NewPointInt(x, y))
-				sp = uint8(SpaceEmpty)
+				sp = SpaceEmpty
 				playerFound = true
 				debug.Printf("Found player start point at (%d,%d)", x, y)
 			case SpaceGopherStart:
 				g.gopher.p = NewPointInt(x, y)
 				gopherStarts = append(gopherStarts, NewPointInt(x, y))
-				sp = uint8(SpaceEmpty)
+				sp = SpaceEmpty
 				gopherFound = true
 				g.items = append(g.items, g.gopher)
 				debug.Printf("Found gopher start point at (%d,%d)", x, y)
@@ -89,7 +86,7 @@ func (g *Game) importMaze(m mazeDefinition) error {
 // ' ' = space
 // 'p' = player starting position (always starts facing north)
 //
-type mazeDefinition [][]uint8
+type mazeDefinition [][]spaceType
 
 var mazes = []mazeDefinition{
 	{

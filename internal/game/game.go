@@ -34,9 +34,9 @@ type (
 // Constants for types of maze space
 const (
 	SpaceEmpty       spaceType = ' '
-	SpaceWall                  = 'X'
-	SpacePlayerStart           = 'p'
-	SpaceGopherStart           = 'g'
+	SpaceWall        spaceType = 'X'
+	SpacePlayerStart spaceType = 'p'
+	SpaceGopherStart spaceType = 'g'
 )
 
 // State represents the current game state
@@ -140,19 +140,15 @@ func (g *Game) Run() error {
 		case 'w':
 			debug.Println("Move forward")
 			g.moveForward()
-			break
 		case 's':
 			debug.Println("Move backward")
 			g.moveBackwards()
-			break
 		case 'd':
 			debug.Println("Turn right")
 			g.rotateRight()
-			break
 		case 'a':
 			debug.Println("Turn left")
 			g.rotateLeft()
-			break
 		case 'q':
 			debug.Println("Exiting game")
 			fmt.Println("Goodbye!")
