@@ -44,9 +44,9 @@ There are a few environment vars supported for changing behaviours:
 | DEBUG   | `false` | Switches on developer debugging. This will stop the screen auto-refreshing and move to slide mode. |
 
 
-### Moving
+### Controls
 
-To move around, use `W`,`S`,`A` & `D` (case insensitve) keys:
+To move around, use `W`,`S`,`A` & `D` (case insensitve) keys. Quit using `q` and display help with `h`
 
 | Key | Action                   |
 | --- | ------------------------ |
@@ -54,6 +54,8 @@ To move around, use `W`,`S`,`A` & `D` (case insensitve) keys:
 | `s` | Move backwards one space |
 | `a` | Rotate 90&deg; left      |
 | `d` | Rotate 90&deg; right     |
+| `q` | Quit game                |
+| `h` | Display help             |
 
 Currently the game doesn't support just press-move; you need to type the
 letter of the command and hit `<return>`!
@@ -63,7 +65,7 @@ letter of the command and hit `<return>`!
 > Note, the win conditions aren't actually implemented yet!
 
 - Find the gopher hidden somewhere in the maze
-- Then find the way out!
+- Then find the way out! (not implemented yet!)
 
 ### Exiting the game
 
