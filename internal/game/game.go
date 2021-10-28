@@ -149,12 +149,14 @@ func (g *Game) Run() error {
 		case 'a':
 			debug.Println("Turn left")
 			g.rotateLeft()
+		case 'h':
+			g.Msg = "Move with w,a,s,d (w=forward, a=turn left, d=turn right, s=backwards)"
 		case 'q':
 			debug.Println("Exiting game")
 			fmt.Println("Goodbye!")
 			return nil
 		default:
-			g.Msg = "Sorry, I didn't understand that one!"
+			g.Msg = "Sorry, I didn't understand that one! (use 'h' for help)"
 		}
 		debug.Printf("Player is now at (%v). Facing (%c)\n", g.player.p, g.player.o)
 	}
