@@ -24,8 +24,8 @@ jobs:
     needs: staticcheck
     strategy:
       matrix:
-        go: ['1.11', '1.12', '1.13', '1.14']
-        platform: [ubuntu-latest]
+        go: ['1.14', '1.15', '1.16', '1.17']
+        platform: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     name: Go ${{ matrix.go }} [${{ matrix.platform }}]
     steps:
