@@ -5,20 +5,18 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"strconv"
-	"time"
 
 	"github.com/gookit/color"
 	"github.com/mattn/go-tty"
-	"github.com/necrophonic/3d-gopher-maze/gopher-maze-2/internal/terminal"
+	"github.com/necrophonic/3d-gopher-maze/gopher-maze-2/internal/game"
 )
 
-var (
-	// The tick is the interval between engine / screen updates
-	tick = 100_000 * time.Microsecond
-)
+// var (
+// 	// The tick is the interval between engine / screen updates
+// 	tick = 100_000 * time.Microsecond
+// )
 
-var message = "No message"
+// var message = "No message"
 
 var (
 	colorLightGrey = color.S256(254, 0).Sprint
@@ -26,17 +24,10 @@ var (
 
 func main() {
 
-	os.Exit(0)
+	gme := game.New(true)
 
 	// Start rendering loop
-	i := 0
-	go func() {
-		for {
-			render(i)
-			time.Sleep(tick)
-			i++
-		}
-	}()
+	go gme.Loop()
 
 	// Start player input loop
 	go func() {
@@ -50,7 +41,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			message = "Keypress: " + string(r)
+			gme.Debug("Keypress: " + string(r))
 
 			switch r {
 			case 'q':
@@ -63,20 +54,4 @@ func main() {
 	// Exit the main goroutine and leave
 	// our main game loop running.
 	runtime.Goexit()
-}
-
-func render(i int) {
-	terminal.Clear()
-	index := strconv.Itoa(i)
-	fmt.Println(`╔════════════════════════╗
-║ ▓▓                  ▓▓ ║
-║ ▓▓▓▓              ▓▓▓▓ ║
-║ ▓▓▓▓▓▓            ` + colorLightGrey("▓▓▓▓") + ` ║
-║ ▓▓▓▓▓▓▓▓      ░░░░▓▓▓▓ ║
-║ ▓▓▓▓▓▓▓▓▓▓  ▓▓░░░░▓▓▓▓ ║
-║ ▓▓▓▓▓▓▓▓      ░░░░▓▓▓▓ ║
-║ ▓▓▓▓▓▓            ▓▓▓▓ ║
-║ ▓▓▓▓              ▓▓▓▓ ║
-║ ▓▓                  ▓▓ ║
-╚════════════════════════╝ ` + index + "\n" + message)
 }
