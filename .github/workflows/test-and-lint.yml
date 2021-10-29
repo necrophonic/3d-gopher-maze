@@ -40,5 +40,4 @@ jobs:
           go-version: ${{ matrix.go }}
       - name: Run tests
         run: go test ./... -cover
-        with:
-          working-directory: ${{ matrix.dir }}
+        working-directory: ${{ matrix.dir }}
