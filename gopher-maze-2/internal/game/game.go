@@ -44,8 +44,6 @@ func New(debug bool) *Game {
 	}
 }
 
-var a string
-
 // Loop is the main game loop. It is designed
 // to be called as a goroutine
 func (g *Game) Loop(ctx context.Context) {
