@@ -11,12 +11,16 @@ import (
 	"github.com/necrophonic/3d-gopher-maze/gopher-maze-2/internal/terminal"
 )
 
-var ds *developer.DebugStack
+var ds developer.Stack
 
 func init() {
-	// TODO make debug switchable via env vars
-	ds = developer.NewDebugStack(true, 11)
-	ds.Add("[debug enabled]")
+	debug := os.Getenv("DEBUG")
+	if debug == "true" {
+		ds = developer.NewDebugStack(11)
+		ds.Add("[debug enabled]")
+	} else {
+		ds = &developer.NullStack{}
+	}
 }
 
 type (
@@ -37,9 +41,9 @@ type (
 )
 
 // New initialises a new game with defaults
-func New(debug bool) *Game {
+func New() *Game {
 	return &Game{
-		Tick:   100_000 * time.Microsecond,
+		Tick:   100 * time.Millisecond,
 		Player: NewPlayer(),
 	}
 }

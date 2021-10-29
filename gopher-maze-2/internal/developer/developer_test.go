@@ -14,7 +14,7 @@ func TestDebugStack(t *testing.T) {
 	stackSize := uint8(3)
 
 	t.Run("Create a new debug stack", func(t *testing.T) {
-		ds = developer.NewDebugStack(true, stackSize)
+		ds = developer.NewDebugStack(stackSize)
 		assert.NotNil(t, ds)
 	})
 
@@ -46,12 +46,12 @@ func TestDebugStack(t *testing.T) {
 	})
 
 	t.Run("Attempt fetch on empty stack", func(t *testing.T) {
-		ds = developer.NewDebugStack(true, stackSize)
+		ds = developer.NewDebugStack(stackSize)
 		assert.Equal(t, ds.Get(0), "")
 	})
 
 	t.Run("Attempt fetch on disbled stack", func(t *testing.T) {
-		ds = developer.NewDebugStack(false, stackSize)
+		ds = developer.NewDebugStack(stackSize)
 		assert.Equal(t, ds.Get(0), "")
 	})
 

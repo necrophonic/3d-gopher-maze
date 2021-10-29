@@ -10,7 +10,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	g := game.New(true)
+	g := game.New()
 
 	// Start rendering loop
 	go g.Loop(ctx)
