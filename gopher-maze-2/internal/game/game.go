@@ -9,50 +9,46 @@ import (
 	"github.com/necrophonic/3d-gopher-maze/gopher-maze-2/internal/terminal"
 )
 
-// Point is a point on the game grid denoted by its x, y co-ordinate. The 0,0
-// point is top left.
-type Point struct {
-	X, Y int
+var ds *developer.DebugStack
+
+func init() {
+	// TODO make debug switchable via env vars
+	ds = developer.NewDebugStack(true, 11)
+	ds.Add("[debug enabled]")
 }
 
 type (
+	// Point is a point on the game grid denoted by
+	// its x, y co-ordinate. The 0,0 point is top left.
+	Point struct {
+		X, Y int
+	}
+
 	// Game represents the overall current running game state
 	Game struct {
-		Tick       time.Duration
-		debug      bool
-		debugStack *developer.DebugStack
+		// Tick is the interval between engine refreshes
+		Tick time.Duration
+
+		// Player represents the current player state
+		Player *Player
 	}
 )
 
 // New initialises a new game with defaults
 func New(debug bool) *Game {
-	gme := &Game{
-		Tick: 100_000 * time.Microsecond,
+	return &Game{
+		Tick:   100_000 * time.Microsecond,
+		Player: NewPlayer(),
 	}
-	if debug {
-		// Enable the debugging stack
-		// if debug was set to true.
-		gme.debug = true
-		gme.debugStack = developer.NewDebugStack(9)
-		gme.Debug("[debug enabled]")
-	}
-	return gme
-}
-
-// Debug adds a message to the current debugging
-// stack (if one has been initialised)
-func (g *Game) Debug(msg string) {
-	if !g.debug {
-		return
-	}
-	g.debugStack.AddMsg(msg)
 }
 
 // Loop is the main game loop. It is designed
 // to be called as a goroutine
 func (g *Game) Loop() {
-	g.Debug("Game loop started")
-	for {
+	ds.Add("Game loop started")
+	ticker := time.NewTicker(g.Tick)
+	defer ticker.Stop()
+	for range ticker.C {
 		// Refresh the terminal before
 		// calling render to build the view.
 		terminal.Clear()
@@ -63,6 +59,6 @@ func (g *Game) Loop() {
 			os.Exit(1)
 		}
 		fmt.Println(rendered)
-		time.Sleep(g.Tick)
+		// time.Sleep(g.Tick)
 	}
 }
