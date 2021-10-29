@@ -1,10 +1,10 @@
-name: Unit tests and linting
+name: Unit tests and linting (3D Gopher Maze)
 
 on: [push]
 
 jobs:
-  staticcheck:
-    name: Run staticcheck
+  staticcheck-1:
+    name: Run staticcheck (3D Gopher maze)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,13 +20,12 @@ jobs:
           go get -u honnef.co/go/tools/cmd/staticcheck
           staticcheck ./...
 
-  test:
-    needs: staticcheck
+  test-1:
+    needs: staticcheck-1
     strategy:
       matrix:
         go: ['1.14', '1.15', '1.16', '1.17']
         platform: [ubuntu-latest, windows-latest]
-        dir: [., gopher-maze-2]
     runs-on: ${{ matrix.platform }}
     name: Go ${{ matrix.go }} [${{ matrix.platform }}]
     steps:
@@ -40,4 +39,42 @@ jobs:
           go-version: ${{ matrix.go }}
       - name: Run tests
         run: go test ./... -cover
-        working-directory: ${{ matrix.dir }}
+
+  staticcheck-2:
+    name: Run staticcheck (3D Gopher maze 2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: staticcheck
+        run: |
+          # add executables installed with go get to PATH
+          # TODO: this will hopefully be fixed by
+          # https://github.com/actions/setup-go/issues/14
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go get -u honnef.co/go/tools/cmd/staticcheck
+          staticcheck ./...
+        working-directory: ./gopher-maze-2
+
+  test-2:
+    needs: staticcheck-2
+    strategy:
+      matrix:
+        go: ['1.14', '1.15', '1.16', '1.17']
+        platform: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    name: Go ${{ matrix.go }} [${{ matrix.platform }}]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Run tests
+        run: go test ./... -cover
+        working-directory: ./gopher-maze-2
