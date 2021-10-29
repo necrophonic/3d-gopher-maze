@@ -26,6 +26,7 @@ jobs:
       matrix:
         go: ['1.14', '1.15', '1.16', '1.17']
         platform: [ubuntu-latest, windows-latest]
+        dir: [., gopher-maze-2]
     runs-on: ${{ matrix.platform }}
     name: Go ${{ matrix.go }} [${{ matrix.platform }}]
     steps:
@@ -39,3 +40,5 @@ jobs:
           go-version: ${{ matrix.go }}
       - name: Run tests
         run: go test ./... -cover
+        with:
+          working-directory: ${{ matrix.dir }}
