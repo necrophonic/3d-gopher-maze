@@ -1,7 +1,9 @@
 package game
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -42,23 +44,30 @@ func New(debug bool) *Game {
 	}
 }
 
+var a string
+
 // Loop is the main game loop. It is designed
 // to be called as a goroutine
-func (g *Game) Loop() {
+func (g *Game) Loop(ctx context.Context) {
 	ds.Add("Game loop started")
 	ticker := time.NewTicker(g.Tick)
 	defer ticker.Stop()
-	for range ticker.C {
-		// Refresh the terminal before
-		// calling render to build the view.
-		terminal.Clear()
-		rendered, err := g.Render()
-		if err != nil {
-			// TODO better error handling
-			fmt.Println("Error:", err)
-			os.Exit(1)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Main game loop closing")
+			return
+		case <-ticker.C:
+			// Refresh the terminal before
+			// calling render to build the view.
+			terminal.Clear()
+			rendered, err := g.Render()
+			if err != nil {
+				// TODO better error handling
+				fmt.Println("Error:", err)
+				os.Exit(1)
+			}
+			fmt.Println(rendered)
 		}
-		fmt.Println(rendered)
-		// time.Sleep(g.Tick)
 	}
 }
