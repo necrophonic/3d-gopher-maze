@@ -45,6 +45,7 @@ func (g *Game) moveForward() {
 	if g.gopher.p.Is(g.player.FrontPoint()) {
 		g.state = sWin
 	}
+	g.stats.Moves++
 }
 
 func (g *Game) moveBackwards() {
@@ -55,6 +56,7 @@ func (g *Game) moveBackwards() {
 	}
 	g.player.p.X += (g.move.x * -1)
 	g.player.p.Y += (g.move.y * -1)
+	g.stats.Moves++
 }
 
 func (g *Game) rotateRight() {
