@@ -45,8 +45,8 @@ const (
 type State uint8
 
 type stats struct {
-	Moves     int
-	StartTime time.Time
+	moves     int
+	startTime time.Time
 }
 
 // Game states
@@ -89,8 +89,8 @@ func New() *Game {
 		state:  sReady,
 		Msg:    "",
 		stats: stats{
-			Moves:     0,
-			StartTime: time.Now(),
+			moves:     0,
+			startTime: time.Now(),
 		},
 	}
 }
@@ -120,7 +120,7 @@ func (g *Game) Run() error {
 		}
 
 		if g.state == sWin {
-			g.Msg = fmt.Sprintf("You won! In %d moves over %d seconds! Let's go champ!", g.stats.Moves, int(time.Since(g.stats.StartTime).Seconds()))
+			g.Msg = fmt.Sprintf("You won! In %d moves over %d seconds! Let's go champ!", g.stats.moves, int(time.Since(g.stats.startTime).Seconds()))
 
 		}
 
