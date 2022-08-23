@@ -170,7 +170,6 @@ func (g *Game) Run() error {
 		default:
 			g.Msg = "Sorry, I didn't understand that one! (use 'h' for help)"
 		}
-		debug.Printf("Player is now at (%v). Facing (%c)\n", g.player.p, g.player.o)
-		debug.Printf("Gopher is now at (%v).\n", g.gopher.p)
+		debug.Printf("Player is now at (%v). Facing (%c). Gopher is now at (%v).\n", g.player.p, g.player.o, g.gopher.p)
 	}
 }
