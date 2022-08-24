@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/necrophonic/gopher-maze/internal/debug"
 	"github.com/necrophonic/gopher-maze/internal/game/element"
@@ -26,6 +27,7 @@ type (
 		gopher *gopher
 		items  []item
 		state  State
+		stats  stats
 
 		Msg string
 	}
@@ -41,6 +43,11 @@ const (
 
 // State represents the current game state
 type State uint8
+
+type stats struct {
+	moves     int
+	startTime time.Time
+}
 
 // Game states
 const (
@@ -81,6 +88,10 @@ func New() *Game {
 		items:  []item{},
 		state:  sReady,
 		Msg:    "",
+		stats: stats{
+			moves:     0,
+			startTime: time.Now(),
+		},
 	}
 }
 
@@ -109,7 +120,8 @@ func (g *Game) Run() error {
 		}
 
 		if g.state == sWin {
-			g.Msg = "You won!"
+			g.Msg = fmt.Sprintf("You won! In %d moves over %d seconds! Let's go champ!", g.stats.moves, int(time.Since(g.stats.startTime).Seconds()))
+
 		}
 
 		if err := g.updateView(); err != nil {
@@ -158,6 +170,6 @@ func (g *Game) Run() error {
 		default:
 			g.Msg = "Sorry, I didn't understand that one! (use 'h' for help)"
 		}
-		debug.Printf("Player is now at (%v). Facing (%c)\n", g.player.p, g.player.o)
+		debug.Printf("Player is now at (%v). Facing (%c). Gopher is now at (%v).\n", g.player.p, g.player.o, g.gopher.p)
 	}
 }
